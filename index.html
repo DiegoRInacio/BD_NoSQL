@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>História dos Bancos NoSQL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow: hidden;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            padding: 60px;
+            background: white;
+            position: absolute;
+            top: 0;
+            left: 0;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            animation: slideIn 0.5s ease-in-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .slide h1 {
+            font-size: 3rem;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .slide h2 {
+            font-size: 2.5rem;
+            color: #34495e;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .slide h3 {
+            font-size: 1.8rem;
+            color: #2980b9;
+            margin: 20px 0 15px 0;
+        }
+
+        .slide p, .slide li {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .slide ul {
+            margin-left: 30px;
+        }
+
+        .timeline {
+            display: grid;
+            grid-template-columns: 1fr 3px 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .timeline-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            position: relative;
+        }
+
+        .timeline-item.right {
+            grid-column: 3;
+        }
+
+        .timeline-item h4 {
+            color: #2980b9;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .timeline-line {
+            background: #3498db;
+            position: relative;
+        }
+
+        .timeline-dot {
+            width: 15px;
+            height: 15px;
+            background: #e74c3c;
+            border-radius: 50%;
+            position: absolute;
+            left: -6px;
+        }
+
+        .cap-triangle {
+            width: 0;
+            height: 0;
+            border-left: 150px solid transparent;
+            border-right: 150px solid transparent;
+            border-bottom: 200px solid #3498db;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .cap-labels {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .cap-labels .consistency { top: 170px; left: -30px; }
+        .cap-labels .availability { top: 170px; right: -30px; }
+        .cap-labels .partition { top: -20px; left: 50%; transform: translateX(-50%); }
+
+        .nosql-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .nosql-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transform: scale(1);
+            transition: transform 0.3s ease;
+        }
+
+        .nosql-card:hover {
+            transform: scale(1.05);
+        }
+
+        .nosql-card h4 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .code-block .comment {
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        .code-block .keyword {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .code-block .string {
+            color: #e74c3c;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(52, 73, 94, 0.8);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(52, 73, 94, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+
+        .highlight {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .exercise-container {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .exercise-step {
+            background: white;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .vs-comparison {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .vs-left, .vs-right {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .vs-left {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .vs-right {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .vs-middle {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 30px;
+            }
+            
+            .slide h1 {
+                font-size: 2rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.8rem;
+            }
+            
+            .nosql-grid, .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="currentSlide">1</span> / <span id="totalSlides">15</span>
+        </div>
+
+        <!-- Slide 1: Título -->
+        <div class="slide active">
+            <h1>🗄️ História dos Bancos de Dados NoSQL</h1>
+            <div style="text-align: center; margin: 40px 0;">
+                <h3>Do Relacional ao NoSQL: Uma Jornada Evolutiva</h3>
+                <p style="font-size: 1.4rem; color: #7f8c8d; margin-top: 30px;">
+                    Entendendo a linha do tempo, motivações técnicas e o ecossistema NoSQL
+                </p>
+                <div style="margin-top: 50px;">
+                    <span class="highlight">MongoDB</span> • 
+                    <span class="highlight">CAP Theorem</span> • 
+                    <span class="highlight">BASE vs ACID</span> • 
+                    <span class="highlight">Escalabilidade</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Objetivos -->
+        <div class="slide">
+            <h2>🎯 Objetivos da Aula</h2>
+            <div class="two-column">
+                <div>
+                    <h3>📚 Conceituais</h3>
+                    <ul>
+                        <li>Entender a <strong>linha do tempo</strong> que levou ao NoSQL
+                            <p style="font-size: 0.9rem; color: #7f8c8d; margin: 5px 0 10px 20px;">
+                                <em>Evolução desde bancos hierárquicos (1960) até a era NoSQL (2000+): por que e quando surgiram as alternativas não relacionais</em>
+                            </p>
+                        </li>
+                        <li>Reconhecer os <strong>limites práticos</strong> do relacional em escala web
+                            <p style="font-size: 0.9rem; color: #7f8c8d; margin: 5px 0 10px 20px;">
+                                <em>Gargalos de escalabilidade vertical, custos de JOIN em grande escala, rigidez de schema para dados semiestruturados</em>
+                            </p>
+                        </li>
+                        <li>Introduzir <strong>CAP</strong> e <strong>ACID vs. BASE</strong>
+                            <p style="font-size: 0.9rem; color: #7f8c8d; margin: 5px 0 10px 20px;">
+                                <em>CAP: trade-off entre Consistência, Disponibilidade e Tolerância a Partições. ACID (transações rígidas) vs BASE (disponibilidade flexível)</em>
+                            </p>
+                        </li>
+                        <li>Compreender a <strong>taxonomia NoSQL</strong>
+                            <p style="font-size: 0.9rem; color: #7f8c8d; margin: 5px 0 10px 20px;">
+                                <em>4 modelos principais: Key-Value, Document, Wide-Column, Graph - cada um otimizado para padrões específicos de acesso aos dados</em>
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🛠️ Práticos</h3>
+                    <ul>
+                        <li>Exercício introdutório com <strong>MongoDB</strong>
+                            <p style="font-size: 0.9rem; color: #7f8c8d; margin: 5px 0 10px 20px;">
+                                <em>Hands-on com inserção, consultas, atualizações e agregações usando o shell MongoDB em um cenário real</em>
+                            </p>
+                        </li>
+                        <li>Comparar consultas <strong>SQL vs NoSQL</strong>
+                            <p style="font-size: 0.9rem; color: #7f8c8d; margin: 5px 0 10px 20px;">
+                                <em>Sintaxe, performance e paradigmas: JOINs relacionais vs documentos aninhados, normalização vs desnormalização</em>
+                            </p>
+                        </li>
+                        <li>Identificar <strong>casos de uso adequados</strong>
+                            <p style="font-size: 0.9rem; color: #7f8c8d; margin: 5px 0 10px 20px;">
+                                <em>Mapear requisitos não-funcionais (latência, throughput, escala) para escolhas arquiteturais específicas</em>
+                            </p>
+                        </li>
+                        <li>Desenvolver senso crítico sobre quando <strong>não</strong> usar NoSQL
+                            <p style="font-size: 0.9rem; color: #7f8c8d; margin: 5px 0 10px 20px;">
+                                <em>Cenários onde SQL permanece superior: transações complexas, analytics ad-hoc, equipes/ferramentas maduras</em>
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Por que NoSQL hoje? -->
+        <div class="slide">
+            <h2>🌐 Por que Falar de NoSQL Hoje?</h2>
+            <div class="nosql-grid">
+                <div class="nosql-card">
+                    <h4>📊 Diversidade de Workloads</h4>
+                    <p>Eventos, logs, catálogos, grafos, buscas textuais</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.9;">
+                        <em>Diferentes padrões de acesso requerem estruturas otimizadas: time-series para IoT, full-text para busca, relacionamentos para grafos sociais</em>
+                    </p>
+                </div>
+                <div class="nosql-card">
+                    <h4>🏗️ Microsserviços</h4>
+                    <p>Cada serviço com seu banco especializado</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.9;">
+                        <em>Database per service: catálogo (Document), carrinho (Key-Value), recomendações (Graph), inventário (Wide-Column)</em>
+                    </p>
+                </div>
+                <div class="nosql-card">
+                    <h4>☁️ Nuvem & Escala</h4>
+                    <p>Distribuição global, alta disponibilidade</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.9;">
+                        <em>Multi-region deployment, automatic failover, horizontal scaling com hardware commodity ao invés de servidores caros</em>
+                    </p>
+                </div>
+                <div class="nosql-card">
+                    <h4>📋 Dados Semiestruturados</h4>
+                    <p>JSON, XML, documentos flexíveis</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.9;">
+                        <em>Schema evolution sem downtime, atributos opcionais, estruturas hierárquicas aninhadas que não se adequam ao modelo tabular</em>
+                    </p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px;">
+                <p style="font-size: 1.3rem; color: #2c3e50;">
+                    <strong>"Polyglot Persistence"</strong> - Usar a ferramenta certa para o problema certo
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Linha do Tempo - Parte 1 -->
+        <div class="slide">
+            <h2>📅 Linha do Tempo - Origem (1960-2000)</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4>📁 Anos 60-80: Hierárquicos/Rede</h4>
+                    <p>IMS, CODASYL - Navegação por ponteiros</p>
+                </div>
+                <div class="timeline-line">
+                    <div class="timeline-dot" style="top: 20%;"></div>
+                </div>
+                <div class="timeline-item right">
+                    <h4>🗃️ 1970: Modelo Relacional</h4>
+                    <p>Edgar Codd - IBM, SQL, Normalização, ACID</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>📈 Anos 90: Data Warehouses</h4>
+                    <p>OLAP, Business Intelligence, Star Schema</p>
+                </div>
+                <div class="timeline-line">
+                    <div class="timeline-dot" style="top: 60%;"></div>
+                </div>
+                <div class="timeline-item right">
+                    <h4>🌐 2000: Dores da Escala Web</h4>
+                    <p>Amazon, Google enfrentam limites relacionais</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Linha do Tempo - Parte 2 -->
+        <div class="slide">
+            <h2>📅 Linha do Tempo - Era NoSQL (2003-presente)</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4>🔍 2003-2006: Google Papers</h4>
+                    <p>GFS, MapReduce, Bigtable - Fundações distribuídas</p>
+                </div>
+                <div class="timeline-line">
+                    <div class="timeline-dot" style="top: 15%;"></div>
+                </div>
+                <div class="timeline-item right">
+                    <h4>📦 2007: Amazon Dynamo</h4>
+                    <p>Eventual consistency, Vector clocks</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>🐘 2008-2010: Hadoop Ecosystem</h4>
+                    <p>Cassandra, HBase, MongoDB, Neo4j emergem</p>
+                </div>
+                <div class="timeline-line">
+                    <div class="timeline-dot" style="top: 60%;"></div>
+                </div>
+                <div class="timeline-item right">
+                    <h4>☁️ 2010-presente: Maturidade</h4>
+                    <p>Nuvem gerenciada, multimodel, NewSQL</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Motivações Técnicas -->
+        <div class="slide">
+            <h2>⚡ Motivações Técnicas para NoSQL</h2>
+            <div class="two-column">
+                <div>
+                    <h3>🎯 Escalabilidade Horizontal</h3>
+                    <ul>
+                        <li><strong>Particionamento</strong> automático
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Sharding transparente: dados distribuídos automaticamente entre múltiplos servidores baseado em chaves</em>
+                            </p>
+                        </li>
+                        <li><strong>Replicação</strong> transparente
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Múltiplas cópias sincronizadas para tolerância à falha e distribuição geográfica de leitura</em>
+                            </p>
+                        </li>
+                        <li><strong>Hardware comum</strong> vs servidores caros
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Scale-out com commodity servers ao invés de scale-up com mainframes: custo linear vs exponencial</em>
+                            </p>
+                        </li>
+                    </ul>
+                    
+                    <h3>🌍 Distribuição Global</h3>
+                    <ul>
+                        <li><strong>Latência</strong> reduzida
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Dados próximos aos usuários: CDN-like database, read replicas regionais</em>
+                            </p>
+                        </li>
+                        <li><strong>Tolerância à falha</strong>
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Failure isolation: falha de um datacenter não afeta disponibilidade global</em>
+                            </p>
+                        </li>
+                        <li><strong>Multi-datacenter</strong>
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Active-active deployment com consistent hashing e eventual consistency</em>
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>📋 Flexibilidade de Dados</h3>
+                    <ul>
+                        <li><strong>JSON/XML</strong> nativo
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Estruturas aninhadas, arrays, tipos heterogêneos sem necessidade de JOIN ou normalização</em>
+                            </p>
+                        </li>
+                        <li><strong>Schema-less</strong> ou schema-on-read
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Evolução de estrutura sem ALTER TABLE, migração gradual, campos opcionais</em>
+                            </p>
+                        </li>
+                        <li><strong>Evolução</strong> incremental
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Backward compatibility automática, versioning de documentos, deploy sem downtime</em>
+                            </p>
+                        </li>
+                    </ul>
+                    
+                    <h3>🚀 Performance Especializada</h3>
+                    <ul>
+                        <li><strong>Padrões de acesso</strong> específicos
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Otimização para read-heavy, write-heavy, range queries, ou graph traversal</em>
+                            </p>
+                        </li>
+                        <li><strong>Cache</strong> integrado
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Hot data em memória, warm/cold data tiering, automatic cache warming</em>
+                            </p>
+                        </li>
+                        <li><strong>Índices especializados</strong>
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Geospatial, full-text, sparse indexes, compound indexes otimizados para query patterns</em>
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: CAP Theorem -->
+        <div class="slide">
+            <h2>🔺 CAP Theorem</h2>
+            <div style="text-align: center;">
+                <div class="cap-triangle">
+                    <div class="cap-labels">
+                        <div class="consistency">Consistência</div>
+                        <div class="availability">Disponibilidade</div>
+                        <div class="partition">Tolerância a Partições</div>
+                    </div>
+                </div>
+                <p style="font-size: 1.3rem; margin-top: 30px;">
+                    <strong>Teorema CAP:</strong> Em um sistema distribuído, você pode garantir <strong>apenas 2 dos 3</strong>
+                </p>
+                <div class="two-column" style="margin-top: 30px;">
+                    <div>
+                        <h3>⚠️ O que CAP NÃO diz:</h3>
+                        <ul>
+                            <li>Trade-offs são <strong>binários</strong></li>
+                            <li>Escolha é <strong>permanente</strong></li>
+                            <li>Aplica-se a <strong>todas</strong> operações</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>✅ Realidade Prática:</h3>
+                        <ul>
+                            <li><strong>Tunáveis</strong> de consistência</li>
+                            <li><strong>Eventual consistency</strong></li>
+                            <li><strong>Context-dependent</strong> choices</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: ACID vs BASE -->
+        <div class="slide">
+            <h2>⚖️ ACID vs BASE</h2>
+            <div class="vs-comparison">
+                <div class="vs-left">
+                    <h3>🏛️ ACID</h3>
+                    <p><strong>A</strong>tomicity</p>
+                    <p><strong>C</strong>onsistency</p>
+                    <p><strong>I</strong>solation</p>
+                    <p><strong>D</strong>urability</p>
+                    <br>
+                    <p>💼 <strong>Bancos Relacionais</strong></p>
+                    <p>🎯 Consistência forte</p>
+                    <p>💰 Transações complexas</p>
+                </div>
+                <div class="vs-middle">VS</div>
+                <div class="vs-right">
+                    <h3>🌊 BASE</h3>
+                    <p><strong>B</strong>asically Available</p>
+                    <p><strong>S</strong>oft state</p>
+                    <p><strong>E</strong>ventual consistency</p>
+                    <br>
+                    <p>🗄️ <strong>Sistemas NoSQL</strong></p>
+                    <p>🌐 Alta disponibilidade</p>
+                    <p>⚡ Performance e escala</p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px;">
+                <p style="font-size: 1.2rem; color: #2c3e50;">
+                    <strong>Contexto Histórico:</strong> BASE ganhou espaço quando throughput e disponibilidade 
+                    tornaram-se mais críticos que consistência imediata
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 9: Taxonomia NoSQL -->
+        <div class="slide">
+            <h2>📊 Taxonomia NoSQL</h2>
+            <div class="nosql-grid">
+                <div class="nosql-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h4>🔑 Key-Value</h4>
+                    <p><strong>Redis, DynamoDB</strong></p>
+                    <p>Cache, sessões, configurações</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.9;">
+                        <em>Estrutura mais simples: chave única mapeia para valor opaco. O(1) lookup, ideal para alta performance e casos de uso simples</em>
+                    </p>
+                </div>
+                <div class="nosql-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <h4>📊 Wide-Column</h4>
+                    <p><strong>Cassandra, HBase</strong></p>
+                    <p>Time series, IoT, logs</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.9;">
+                        <em>Tabelas esparsas com colunas dinâmicas. Row key + column family. Otimizado para write-heavy e range queries</em>
+                    </p>
+                </div>
+                <div class="nosql-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <h4>📄 Document</h4>
+                    <p><strong>MongoDB, CouchDB</strong></p>
+                    <p>Catálogos, CMS, APIs</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.9;">
+                        <em>Documentos JSON/BSON com estruturas aninhadas. Schema flexível, índices secundários, queries ricas tipo SQL</em>
+                    </p>
+                </div>
+                <div class="nosql-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                    <h4>🕸️ Graph</h4>
+                    <p><strong>Neo4j, ArangoDB</strong></p>
+                    <p>Redes sociais, recomendações</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.9;">
+                        <em>Nós e arestas com propriedades. Traversal algorithms, shortest path, community detection. Query languages como Cypher</em>
+                    </p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px;">
+                <p style="font-size: 1.3rem; color: #2c3e50;">
+                    <strong>Princípio-chave:</strong> "Modelar por consulta" - abandonar 3FN quando 
+                    o requisito é throughput/latência específicos
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 10: Estudos de Caso -->
+        <div class="slide">
+            <h2>📈 Estudos de Caso Reais</h2>
+            <div class="two-column">
+                <div>
+                    <div class="exercise-step">
+                        <h4>🛒 E-commerce: Catálogo de Produtos</h4>
+                        <p><strong>Desafio:</strong> Produtos com atributos variáveis</p>
+                        <p><strong>Solução:</strong> MongoDB - documentos flexíveis</p>
+                        <p><strong>Vantagem:</strong> Schema evolution, consultas ricas</p>
+                    </div>
+                    
+                    <div class="exercise-step">
+                        <h4>📱 Feed Social: Timeline</h4>
+                        <p><strong>Desafio:</strong> Milhões de posts, low latency</p>
+                        <p><strong>Solução:</strong> Cassandra - wide columns</p>
+                        <p><strong>Vantagem:</strong> Write-heavy, particionamento temporal</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="exercise-step">
+                        <h4>🔍 Antifraude: Análise de Padrões</h4>
+                        <p><strong>Desafio:</strong> Relacionamentos complexos</p>
+                        <p><strong>Solução:</strong> Neo4j - grafos</p>
+                        <p><strong>Vantagem:</strong> Consultas de caminhos, detecção de clusters</p>
+                    </div>
+                    
+                    <div class="exercise-step">
+                        <h4>⚡ Cache de Sessão</h4>
+                        <p><strong>Desafio:</strong> Sub-millisecond access</p>
+                        <p><strong>Solução:</strong> Redis - key-value</p>
+                        <p><strong>Vantagem:</strong> In-memory, estruturas de dados ricas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: SQL vs NoSQL -->
+        <div class="slide">
+            <h2>🔄 SQL vs NoSQL: Comparação Prática</h2>
+            <div class="two-column">
+                <div>
+                    <h3>🗃️ Consulta SQL</h3>
+                    <div class="code-block">
+<span class="keyword">SELECT</span> p.name, p.price, c.name <span class="keyword">as</span> category
+<span class="keyword">FROM</span> products p
+<span class="keyword">JOIN</span> categories c <span class="keyword">ON</span> p.category_id = c.id
+<span class="keyword">WHERE</span> p.price > <span class="string">100</span>
+<span class="keyword">ORDER BY</span> p.price <span class="keyword">DESC</span>;
+                    </div>
+                    <p><strong>Características:</strong></p>
+                    <ul>
+                        <li>Schema rígido</li>
+                        <li>JOINs relacionais</li>
+                        <li>Normalização 3FN</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>📄 Consulta MongoDB</h3>
+                    <div class="code-block">
+db.products.find(
+  { <span class="string">"price"</span>: { <span class="string">"$gt"</span>: <span class="string">100</span> } },
+  { 
+    <span class="string">"name"</span>: <span class="string">1</span>, 
+    <span class="string">"price"</span>: <span class="string">1</span>, 
+    <span class="string">"category.name"</span>: <span class="string">1</span> 
+  }
+).sort({ <span class="string">"price"</span>: <span class="string">-1</span> });
+                    </div>
+                    <p><strong>Características:</strong></p>
+                    <ul>
+                        <li>Schema flexível</li>
+                        <li>Documentos aninhados</li>
+                        <li>Desnormalização intencional</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Quando NÃO usar NoSQL -->
+        <div class="slide">
+            <h2>⛔ Quando NÃO Usar NoSQL</h2>
+            <div class="two-column">
+                <div>
+                    <h3>💰 Transações Complexas</h3>
+                    <ul>
+                        <li>Sistemas financeiros
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>ACID rigoroso, transferências multi-conta, rollback automático, auditoria completa</em>
+                            </p>
+                        </li>
+                        <li>ERPs tradicionais
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Múltiplas tabelas relacionadas, integridade referencial complexa, workflows transacionais</em>
+                            </p>
+                        </li>
+                        <li>Múltiplas entidades relacionadas
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>JOINs complexos, foreign keys, stored procedures, triggers para lógica de negócio</em>
+                            </p>
+                        </li>
+                    </ul>
+                    
+                    <h3>📊 Analytics Complexos</h3>
+                    <ul>
+                        <li>Data warehousing
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>OLAP cubes, star/snowflake schemas, ETL pipelines, histórico dimensional</em>
+                            </p>
+                        </li>
+                        <li>Relatórios ad-hoc
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>SQL dinâmico, query builders, dashboards flexíveis sem estrutura predefinida</em>
+                            </p>
+                        </li>
+                        <li>JOINs frequentes
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Relacionamentos many-to-many, agregações cross-table, queries não previstas no design</em>
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>👥 Equipe & Conhecimento</h3>
+                    <ul>
+                        <li>Time experiente em SQL
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Curva de aprendizado: NoSQL requer mindset diferente, padrões novos, debugging complexo</em>
+                            </p>
+                        </li>
+                        <li>Ferramentas consolidadas
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>ORMs maduros, IDEs integradas, ferramentas de monitoring, backup/recovery estabelecidos</em>
+                            </p>
+                        </li>
+                        <li>Maturidade do ecossistema
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>50+ anos de evolução, padrões consolidados, troubleshooting conhecido, comunidade ampla</em>
+                            </p>
+                        </li>
+                    </ul>
+                    
+                    <h3>📏 Escala Pequena/Média</h3>
+                    <ul>
+                        <li>< 1TB de dados
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Scale-up ainda viável, complexidade do NoSQL não se justifica, single server suficiente</em>
+                            </p>
+                        </li>
+                        <li>< 1000 req/sec
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>PostgreSQL com tuning adequado atende, índices B-tree eficientes, read replicas simples</em>
+                            </p>
+                        </li>
+                        <li>Infraestrutura simples
+                            <p style="font-size: 0.85rem; color: #7f8c8d; margin: 5px 0 8px 20px;">
+                                <em>Overhead operacional do NoSQL > benefícios, setup/manutenção complexos, monitoring distribuído</em>
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <p style="font-size: 1.3rem; color: #e74c3c;">
+                    <strong>Regra de Ouro:</strong> NoSQL ≠ melhor. É "adequado a" trade-offs explícitos.
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 13: Introdução ao MongoDB -->
+        <div class="slide">
+            <h2>🍃 MongoDB: Document Database</h2>
+            <div class="two-column">
+                <div>
+                    <h3>🎯 Características</h3>
+                    <ul>
+                        <li><strong>Documentos BSON</strong> (Binary JSON)</li>
+                        <li><strong>Schema flexível</strong></li>
+                        <li><strong>Índices secundários</strong></li>
+                        <li><strong>Agregation Framework</strong></li>
+                        <li><strong>Sharding automático</strong></li>
+                    </ul>
+                    
+                    <h3>📊 Casos de Uso Ideais</h3>
+                    <ul>
+                        <li>APIs REST/GraphQL</li>
+                        <li>Catálogos de produtos</li>
+                        <li>Content Management</li>
+                        <li>Perfis de usuário</li>
+                        <li>Logs e eventos</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>📄 Estrutura de Documento</h3>
+                    <div class="code-block">
+{
+  <span class="string">"_id"</span>: ObjectId(<span class="string">"..."</span>),
+  <span class="string">"name"</span>: <span class="string">"Smartphone XYZ"</span>,
+  <span class="string">"price"</span>: <span class="string">899.99</span>,
+  <span class="string">"category"</span>: {
+    <span class="string">"name"</span>: <span class="string">"Electronics"</span>,
+    <span class="string">"subcategory"</span>: <span class="string">"Mobile"</span>
+  },
+  <span class="string">"specs"</span>: [
+    { <span class="string">"ram"</span>: <span class="string">"8GB"</span> },
+    { <span class="string">"storage"</span>: <span class="string">"256GB"</span> }
+  ],
+  <span class="string">"reviews"</span>: [
+    {
+      <span class="string">"user"</span>: <span class="string">"alice"</span>,
+      <span class="string">"rating"</span>: <span class="string">5</span>,
+      <span class="string">"comment"</span>: <span class="string">"Excelente!"</span>
+    }
+  ]
+}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Exercício Prático MongoDB -->
+        <div class="slide">
+            <h2>🛠️ Exercício Prático: MongoDB Básico</h2>
+            <div class="exercise-container">
+                <h3>🎯 Cenário: Sistema de Biblioteca Digital</h3>
+                <p>Vamos criar um banco para gerenciar livros, autores e empréstimos.</p>
+                
+                <div class="exercise-step">
+                    <h4>📚 Passo 1: Criar e conectar ao banco</h4>
+                    <div class="code-block">
+use biblioteca_digital
+
+db.getName()
+                    </div>
+                </div>
+
+                <div class="exercise-step">
+                    <h4>📖 Passo 2: Inserir documentos de livros</h4>
+                    <div class="code-block">
+db.livros.insertOne({
+  titulo: <span class="string">"1984"</span>,
+  autor: <span class="string">"George Orwell"</span>,
+  ano: <span class="string">1949</span>,
+  genero: [<span class="string">"Ficção"</span>, <span class="string">"Distopia"</span>],
+  disponivel: <span class="keyword">true</span>,
+  avaliacoes: [
+    { usuario: <span class="string">"maria"</span>, nota: <span class="string">5</span>, comentario: <span class="string">"Obra-prima!"</span> }
+  ]
+})
+
+db.livros.insertMany([
+  {
+    titulo: <span class="string">"Dom Casmurro"</span>,
+    autor: <span class="string">"Machado de Assis"</span>,
+    ano: <span class="string">1899</span>,
+    genero: [<span class="string">"Romance"</span>, <span class="string">"Literatura Brasileira"</span>],
+    disponivel: <span class="keyword">true</span>
+  },
+  {
+    titulo: <span class="string">"O Senhor dos Anéis"</span>,
+    autor: <span class="string">"J.R.R. Tolkien"</span>,
+    ano: <span class="string">1954</span>,
+    genero: [<span class="string">"Fantasia"</span>],
+    disponivel: <span class="keyword">false</span>
+  }
+])
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Exercício Prático - Consultas -->
+        <div class="slide">
+            <h2>🔍 Exercício Prático: Consultas MongoDB</h2>
+            <div class="exercise-container">
+                <div class="exercise-step">
+                    <h4>🔎 Passo 3: Consultas básicas</h4>
+                    <div class="code-block">
+db.livros.find()
+
+db.livros.find({ disponivel: <span class="keyword">true</span> })
+
+db.livros.find({ autor: <span class="string">"George Orwell"</span> })
+
+db.livros.find({ genero: <span class="string">"Ficção"</span> })
+
+db.livros.find({ ano: { $gt: <span class="string">1950</span> } })
+                    </div>
+                </div>
+
+                <div class="exercise-step">
+                    <h4>📝 Passo 4: Atualizações e operações</h4>
+                    <div class="code-block">
+db.livros.updateOne(
+  { titulo: <span class="string">"1984"</span> },
+  { $set: { disponivel: <span class="keyword">false</span> } }
+)
+
+db.livros.updateOne(
+  { titulo: <span class="string">"Dom Casmurro"</span> },
+  { 
+    $push: { 
+      avaliacoes: { 
+        usuario: <span class="string">"joao"</span>, 
+        nota: <span class="string">4</span>, 
+        comentario: <span class="string">"Clássico brasileiro"</span> 
+      } 
+    } 
+  }
+)
+
+db.livros.countDocuments({ disponivel: <span class="keyword">true</span> })
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 16: Exercício - Agregações -->
+        <div class="slide">
+            <h2>📊 Exercício Prático: Agregações MongoDB</h2>
+            <div class="exercise-container">
+                <div class="exercise-step">
+                    <h4>🔢 Passo 5: Pipeline de agregação</h4>
+                    <div class="code-block">
+db.livros.aggregate([
+  {
+    $group: {
+      _id: <span class="string">"$autor"</span>,
+      total_livros: { $sum: <span class="string">1</span> },
+      livros: { $push: <span class="string">"$titulo"</span> }
+    }
+  }
+])
+
+db.livros.aggregate([
+  { $unwind: <span class="string">"$genero"</span> },
+  {
+    $group: {
+      _id: <span class="string">"$genero"</span>,
+      count: { $sum: <span class="string">1</span> },
+      disponiveis: {
+        $sum: { $cond: [<span class="string">"$disponivel"</span>, <span class="string">1</span>, <span class="string">0</span>] }
+      }
+    }
+  },
+  { $sort: { count: <span class="string">-1</span> } }
+])
+                    </div>
+                </div>
+
+                <div class="exercise-step">
+                    <h4>📈 Passo 6: Consultas avançadas</h4>
+                    <div class="code-block">
+db.livros.createIndex({ titulo: <span class="string">"text"</span>, autor: <span class="string">"text"</span> })
+db.livros.find({ $text: { $search: <span class="string">"Orwell"</span> } })
+
+db.livros.find(
+  { disponivel: <span class="keyword">true</span> },
+  { titulo: <span class="string">1</span>, autor: <span class="string">1</span>, _id: <span class="string">0</span> }
+)
+
+db.livros.find().sort({ ano: <span class="string">-1</span> }).limit(<span class="string">2</span>)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 17: Desafio do Exercício -->
+        <div class="slide">
+            <h2>🏆 Desafio: Complete o Sistema</h2>
+            <div class="exercise-container">
+                <h3>🎯 Missão: Expandir a Biblioteca Digital</h3>
+                
+                <div class="two-column">
+                    <div>
+                        <div class="exercise-step">
+                            <h4>👥 1. Coleção de Usuários</h4>
+                            <div class="code-block" style="font-size: 0.9rem;">
+db.usuarios.insertMany([
+  {
+    nome: <span class="string">"Maria Silva"</span>,
+    email: <span class="string">"maria@email.com"</span>,
+    tipo: <span class="string">"estudante"</span>,
+    emprestimos_ativos: []
+  },
+  {
+    nome: <span class="string">"João Santos"</span>,
+    email: <span class="string">"joao@email.com"</span>,
+    tipo: <span class="string">"professor"</span>,
+    emprestimos_ativos: []
+  }
+])
+                            </div>
+                        </div>
+
+                        <div class="exercise-step">
+                            <h4>📋 2. Sistema de Empréstimos</h4>
+                            <div class="code-block" style="font-size: 0.9rem;">
+db.emprestimos.insertOne({
+  usuario_id: ObjectId(<span class="string">"..."</span>),
+  livro_id: ObjectId(<span class="string">"..."</span>),
+  data_emprestimo: new Date(),
+  data_devolucao_prevista: new Date(<span class="string">"2024-02-15"</span>),
+  status: <span class="string">"ativo"</span>
+})
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="exercise-step">
+                            <h4>🔍 3. Consultas Desafio</h4>
+                            <p><strong>Implementar:</strong></p>
+                            <ul>
+                                <li>Listar empréstimos em atraso</li>
+                                <li>Top 5 livros mais avaliados</li>
+                                <li>Usuários com mais empréstimos</li>
+                                <li>Relatório mensal de atividade</li>
+                            </ul>
+                        </div>
+
+                        <div class="exercise-step">
+                            <h4>🎨 4. Funcionalidades Extra</h4>
+                            <ul>
+                                <li><strong>Índices:</strong> Performance de consultas</li>
+                                <li><strong>Validação:</strong> Schema validation</li>
+                                <li><strong>Recomendação:</strong> Livros similares</li>
+                                <li><strong>Dashboard:</strong> Estatísticas gerais</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 18: Fechamento e Próximos Passos -->
+        <div class="slide">
+            <h2>🎯 Recapitulação e Próximos Passos</h2>
+            <div class="two-column">
+                <div>
+                    <h3>📚 O que Aprendemos</h3>
+                    <ul>
+                        <li>📅 <strong>Linha do tempo</strong> do NoSQL</li>
+                        <li>⚡ <strong>Motivações técnicas</strong> para escala</li>
+                        <li>🔺 <strong>CAP Theorem</strong> e trade-offs</li>
+                        <li>⚖️ <strong>ACID vs BASE</strong> na prática</li>
+                        <li>📊 <strong>Taxonomia NoSQL</strong> completa</li>
+                        <li>🍃 <strong>MongoDB</strong> hands-on</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🚀 Próxima Aula</h3>
+                    <ul>
+                        <li>🏗️ <strong>Arquiteturas distribuídas</strong></li>
+                        <li>📊 <strong>Particionamento</strong> e sharding</li>
+                        <li>🔄 <strong>Replicação</strong> e consistência</li>
+                        <li>⚡ <strong>Performance tuning</strong></li>
+                        <li>🛡️ <strong>Segurança</strong> em NoSQL</li>
+                        <li>☁️ <strong>Cloud deployment</strong></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white;">
+                <h3>📝 Atividade para Casa</h3>
+                <p style="font-size: 1.2rem; margin: 15px 0;">
+                    <strong>Leitura:</strong> Kleppmann - "Designing Data-Intensive Applications" (Capítulos 1-2)
+                </p>
+                <p style="font-size: 1.2rem;">
+                    <strong>Reflexão:</strong> "Em que cenários EU não usaria NoSQL? Por quê?" (1 página)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação -->
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlideIndex = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            
+            document.getElementById('currentSlide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newIndex = currentSlideIndex + direction;
+            if (newIndex >= 0 && newIndex < totalSlides) {
+                currentSlideIndex = newIndex;
+                showSlide(currentSlideIndex);
+            }
+        }
+
+        // Navegação por teclado
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (event.key === 'ArrowRight') {
+                changeSlide(1);
+            }
+        });
+
+        // Inicializar
+        showSlide(0);
+
+        // Efeitos visuais extras
+        document.addEventListener('DOMContentLoaded', () => {
+            // Animação dos cards NoSQL
+            const cards = document.querySelectorAll('.nosql-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Efeito de hover nos botões de navegação
+            const navBtns = document.querySelectorAll('.nav-btn');
+            navBtns.forEach(btn => {
+                btn.addEventListener('mouseenter', () => {
+                    btn.style.transform = 'translateY(-2px) scale(1.05)';
+                });
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
