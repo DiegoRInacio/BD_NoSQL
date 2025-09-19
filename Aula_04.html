@@ -1,0 +1,2837 @@
+<div class="slide">
+            <h2><span class="emoji">⚡</span>Indexação e Performance</h2>
+            
+            <div class="concept-box">
+                <p style="font-size: 1.2rem; margin-bottom: 20px;">
+                    <span class="highlight">Índices</span> são fundamentais para consultas rápidas em grandes volumes de dados!
+                </p>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">📈 Criando Índices Essenciais</div>
+                <pre><code class="language-javascript">// Índice simples (campo único)
+db.alunos.createIndex({ nome: 1 })
+db.alunos.createIndex({ idade: -1 })
+db.alunos.createIndex({ data_matricula: -1 })
+
+// Índice composto (múltiplos campos)
+db.alunos.createIndex({ curso_id: 1, ativo: 1 })
+db.alunos.createIndex({ ativo: 1, idade: -1 })
+
+// Índice de texto para busca textual
+db.alunos.createIndex({ nome: "text", curso: "text" })
+
+// Índice esparso (só para docs que têm o campo)
+db.alunos.createIndex({ telefone: 1 }, { sparse: true })
+
+// Índice com TTL (expira documentos automaticamente)
+db.logs.createIndex({ data_criacao: 1 }, { expireAfterSeconds: 86400 }) // 24h
+
+// Índice único (garante unicidade)
+db.alunos.createIndex({ email: 1 }, { unique: true })</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🔍 Analisando Performance</div>
+                        <pre><code class="language-javascript">// Ver plano de execução detalhado
+db.alunos.find({ idade: { $gt: 20 } })
+  .explain("executionStats")
+
+// Verificar índices existentes
+db.alunos.getIndexes()
+
+// Estatísticas de uso de índices
+db.alunos.aggregate([
+  { $indexStats: {} }
+])
+
+// Verificar se consulta usa índice
+db.alunos.find({ nome: "João" })
+  .hint({ nome: 1 })  // forçar uso do índice</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🧹 Manutenção de Índices</div>
+                        <pre><code class="language-javascript">// Remover índice específico
+db.alunos.dropIndex({ nome: 1 })
+
+// Remover por nome
+db.alunos.dropIndex("nome_1")
+
+// Recriar todos os índices
+db.alunos.reIndex()
+
+// Compactar coleção
+db.runCommand({ compact: "alunos" })
+
+// Ver tamanho dos índices
+db.alunos.totalIndexSize()</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">📊 Monitoramento de Performance</div>
+                <pre><code class="language-javascript">// Profiler - monitorar consultas lentas
+db.setProfilingLevel(2, { slowms: 100 })  // loggar operações > 100ms
+
+// Ver operações lentas
+db.system.profile.find().limit(5).sort({ ts: -1 }).pretty()
+
+// Estatísticas da coleção
+db.alunos.stats()
+
+// Operações atuais
+db.currentOp()
+
+// Status do servidor
+db.serverStatus().connections</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🎯 Estratégias de Indexação:</h3>
+                <div class="two-column">
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">✅ Fazer</h4>
+                        <ul>
+                            <li>Indexar campos de consulta frequente</li>
+                            <li>Usar índices compostos para consultas múltiplas</li>
+                            <li>Campo mais seletivo primeiro no índice</li>
+                            <li>Monitorar com explain() regularmente</li>
+                            <li>Criar índices em background em produção</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #ff6b6b; margin-bottom: 15px;">❌ Evitar</h4>
+                        <ul>
+                            <li>Muitos índices (impacta writes)</li>
+                            <li>Índices em campos que mudam muito</li>
+                            <li>Índices em coleções muito pequenas</li>
+                            <li>Índices duplicados ou redundantes</li>
+                            <li>Ignorar o custo de manutenção</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Transações e Operações Atômicas -->
+        <div class="slide">
+            <h2><span class="emoji">🔒</span>Transações e Operações Atômicas</h2>
+            
+            <div class="concept-box">
+                <p style="font-size: 1.2rem; margin-bottom: 20px;">
+                    <span class="highlight">Transações</span> garantem que múltiplas operações sejam executadas atomicamente (tudo ou nada).
+                </p>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🏦 Exemplo Básico: Transação com IDs Fixos</div>
+                <pre><code class="language-javascript">// PROBLEMA: Este código falha porque usa IDs placeholder
+// ❌ Não funciona - gera erro BSONError
+session = db.getMongo().startSession()
+
+try {
+    session.startTransaction()
+    
+    // ❌ ERRO: "turma_atual_id" não é um ObjectId válido
+    db.turmas.updateOne(
+        { _id: ObjectId("turma_atual_id") },  // String inválida
+        { $pull: { alunos: ObjectId("aluno_id") } },
+        { session: session }
+    )
+    
+    session.commitTransaction()
+} catch (error) {
+    session.abortTransaction()
+    print("❌ Erro:", error)  // BSONError: input must be a 24 character hex string
+} finally {
+    session.endSession()
+}</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">✅ Solução Prática: Transação com Filtros Dinâmicos</div>
+                <pre><code class="language-javascript">// ✅ VERSÃO CORRETA - Busca dinâmica por filtros
+session = db.getMongo().startSession()
+
+try {
+    session.startTransaction()
+    
+    // 1. Buscar o aluno pelo nome (mais prático que decorar IDs)
+    const aluno = db.alunos.findOne(
+        { nome: "João Silva" },
+        { session: session }
+    )
+    
+    if (!aluno) {
+        throw new Error("Aluno não encontrado")
+    }
+    
+    // 2. Buscar a nova turma pelo código
+    const novaTurma = db.turmas.findOne(
+        { codigo: "COMP2024D" },
+        { session: session }
+    )
+    
+    if (!novaTurma) {
+        throw new Error("Nova turma não encontrada")
+    }
+    
+    // 3. Verificar se há vagas disponíveis
+    if (novaTurma.vagas_ocupadas >= novaTurma.vagas) {
+        throw new Error("Não há vagas disponíveis na turma de destino")
+    }
+    
+    print(`Transferindo ${aluno.nome} para turma ${novaTurma.codigo}`)
+    
+    // 4. Executar as operações da transação
+    
+    // Atualizar dados do aluno
+    db.alunos.updateOne(
+        { _id: aluno._id },
+        { 
+            $set: { 
+                turma_id: novaTurma._id,
+                curso_id: novaTurma.curso_id,
+                data_transferencia: new Date()
+            }
+        },
+        { session: session }
+    )
+    
+    // Liberar vaga na turma atual
+    db.turmas.updateOne(
+        { _id: aluno.turma_id },
+        { $inc: { vagas_ocupadas: -1 } },
+        { session: session }
+    )
+    
+    // Ocupar vaga na nova turma
+    db.turmas.updateOne(
+        { _id: novaTurma._id },
+        { $inc: { vagas_ocupadas: 1 } },
+        { session: session }
+    )
+    
+    // Commit da transação
+    session.commitTransaction()
+    print("✅ Transferência realizada com sucesso!")
+    
+} catch (error) {
+    session.abortTransaction()
+    print("❌ Erro na transferência:", error.message)
+} finally {
+    session.endSession()
+}</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🔄 Função Reutilizável para Transferências</div>
+                <pre><code class="language-javascript">// Função que pode ser reutilizada com diferentes alunos/turmas
+function transferirAluno(nomeAluno, codigoNovaTurma) {
+    const session = db.getMongo().startSession()
+    
+    try {
+        session.startTransaction()
+        
+        // Buscar aluno
+        const aluno = db.alunos.findOne(
+            { nome: nomeAluno, ativo: true },
+            { session: session }
+        )
+        
+        if (!aluno) {
+            throw new Error(`Aluno "${nomeAluno}" não encontrado ou inativo`)
+        }
+        
+        // Buscar nova turma
+        const novaTurma = db.turmas.findOne(
+            { codigo: codigoNovaTurma },
+            { session: session }
+        )
+        
+        if (!novaTurma) {
+            throw new Error(`Turma "${codigoNovaTurma}" não encontrada`)
+        }
+        
+        // Verificar se não é a mesma turma
+        if (aluno.turma_id.equals(novaTurma._id)) {
+            throw new Error("Aluno já está nesta turma")
+        }
+        
+        // Verificar vagas
+        if (novaTurma.vagas_ocupadas >= novaTurma.vagas) {
+            throw new Error(`Turma ${codigoNovaTurma} está lotada`)
+        }
+        
+        // Executar transferência
+        db.alunos.updateOne(
+            { _id: aluno._id },
+            { 
+                $set: { 
+                    turma_id: novaTurma._id,
+                    curso_id: novaTurma.curso_id,
+                    data_transferencia: new Date()
+                }
+            },
+            { session: session }
+        )
+        
+        // Atualizar vagas
+        db.turmas.updateOne(
+            { _id: aluno.turma_id },
+            { $inc: { vagas_ocupadas: -1 } },
+            { session: session }
+        )
+        
+        db.turmas.updateOne(
+            { _id: novaTurma._id },
+            { $inc: { vagas_ocupadas: 1 } },
+            { session: session }
+        )
+        
+        session.commitTransaction()
+        return { success: true, message: "Transferência realizada com sucesso!" }
+        
+    } catch (error) {
+        session.abortTransaction()
+        return { success: false, message: error.message }
+    } finally {
+        session.endSession()
+    }
+}
+
+// Exemplos de uso:
+resultado = transferirAluno("João Silva", "COMP2024D")
+print(resultado.message)
+
+// Mais transferências de teste:
+transferirAluno("Maria Santos", "PSI2024E")  // Medicina → Psicologia
+transferirAluno("Carlos Lima", "DIR2024C")   // Engenharia → Direito</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🐍 Transações em Python</div>
+                        <pre><code class="language-python">from pymongo import MongoClient
+from pymongo.errors import PyMongoError
+
+def transferir_aluno(aluno_id, nova_turma_id):
+    client = MongoClient()
+    
+    with client.start_session() as session:
+        try:
+            with session.start_transaction():
+                # Buscar dados atuais
+                aluno = client.escola.alunos.find_one(
+                    {"_id": aluno_id}, session=session
+                )
+                
+                if not aluno:
+                    raise ValueError("Aluno não encontrado")
+                
+                turma_atual = aluno.get("turma_id")
+                
+                # Remover da turma atual
+                if turma_atual:
+                    client.escola.turmas.update_one(
+                        {"_id": turma_atual},
+                        {"$pull": {"alunos": aluno_id}},
+                        session=session
+                    )
+                
+                # Adicionar na nova turma
+                client.escola.turmas.update_one(
+                    {"_id": nova_turma_id},
+                    {"$push": {"alunos": aluno_id}},
+                    session=session
+                )
+                
+                # Atualizar aluno
+                client.escola.alunos.update_one(
+                    {"_id": aluno_id},
+                    {
+                        "$set": {
+                            "turma_id": nova_turma_id,
+                            "data_transferencia": datetime.now()
+                        }
+                    },
+                    session=session
+                )
+            
+            return True
+            
+        except PyMongoError as e:
+            print(f"Erro na transação: {e}")
+            return False</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">⚡ Operações Atômicas Simples</div>
+                        <pre><code class="language-javascript">// ✅ SINTAXE ATUAL (recomendada)
+// findOneAndUpdate - busca e modifica atomicamente
+db.alunos.findOneAndUpdate(
+    { nome: "João Silva" },
+    { $inc: { idade: 1 } },
+    { returnNewDocument: true }  // retorna documento atualizado
+)
+
+// ❌ SINTAXE ANTIGA (ainda funciona, mas obsoleta)
+// db.alunos.findAndModify({
+//     query: { nome: "João Silva" },
+//     update: { $inc: { idade: 1 } },
+//     new: true
+// })
+
+// upsert - atualiza ou insere (muito útil!)
+db.alunos.updateOne(
+    { email: "joao@email.com" },
+    { 
+        $set: { nome: "João Silva", idade: 20 },
+        $setOnInsert: { data_criacao: new Date() }  // só insere se criar novo doc
+    },
+    { upsert: true }  // cria se não existir
+)
+
+// Incremento atômico - super seguro para contadores
+db.contadores.updateOne(
+    { _id: "matriculas" },
+    { $inc: { valor: 1 } }  // incrementa automaticamente
+)
+
+// Push com limite - mantém histórico limitado
+db.alunos.updateOne(
+    { nome: "João Silva" },  // usando filtro prático
+    {
+        $push: {
+            historico_notas: {
+                $each: [{ nota: 8.5, disciplina: "MongoDB", data: new Date() }],
+                $slice: -5  // mantém apenas últimos 5 registros
+            }
+        }
+    }
+)</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Requisitos para Transações:</strong> Transações multi-documento funcionam apenas em replica sets ou clusters sharded. Para desenvolvimento local, use MongoDB como replica set.
+            </div>
+        </div>
+
+        <!-- Slide 13: Backup e Segurança -->
+        <div class="slide">
+            <h2><span class="emoji">🛡️</span>Backup, Segurança e Boas Práticas</h2>
+            
+            <div class="code-container">
+                <div class="code-title">💾 Backup e Restore</div>
+                <pre><code class="language-bash"># Backup completo do banco
+mongodump --host localhost:27017 --db escola --out /backup/
+
+# Backup de uma coleção específica
+mongodump --host localhost:27017 --db escola --collection alunos --out /backup/
+
+# Backup com compressão
+mongodump --host localhost:27017 --db escola --gzip --out /backup/
+
+# Restore completo
+mongorestore --host localhost:27017 --db escola_restore /backup/escola/
+
+# Restore de coleção específica
+mongorestore --host localhost:27017 --db escola --collection alunos /backup/escola/alunos.bson
+
+# Export para JSON/CSV
+mongoexport --host localhost:27017 --db escola --collection alunos --out alunos.json
+mongoexport --host localhost:27017 --db escola --collection alunos --type=csv --fields nome,idade,curso --out alunos.csv</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🔐 Configuração de Segurança</div>
+                        <pre><code class="language-javascript">// Criar usuário administrador
+use admin
+db.createUser({
+  user: "admin",
+  pwd: "senhaSegura123",
+  roles: [
+    { role: "userAdminAnyDatabase", db: "admin" },
+    { role: "readWriteAnyDatabase", db: "admin" }
+  ]
+})
+
+// Criar usuário específico para aplicação
+use escola
+db.createUser({
+  user: "app_escola",
+  pwd: "senhaApp456",
+  roles: [
+    { role: "readWrite", db: "escola" }
+  ]
+})
+
+// Criar usuário apenas leitura
+db.createUser({
+  user: "relatorios",
+  pwd: "senhaRead789",
+  roles: [
+    { role: "read", db: "escola" }
+  ]
+})</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">📝 Auditoria e Logs</div>
+                        <pre><code class="language-javascript">// Habilitar profiling para auditoria
+db.setProfilingLevel(1, { slowms: 50 })
+
+// Log de operações de escrita
+db.runCommand({
+  setParameter: 1,
+  logLevel: 2
+})
+
+// Verificar conexões ativas
+db.serverStatus().connections
+
+// Verificar operações atuais
+db.currentOp({
+  "active": true,
+  "secs_running": { "$gt": 5 }
+})
+
+// Matar operação lenta
+db.killOp(operationId)</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔒 Checklist de Segurança:</h3>
+                <div class="two-column">
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">🛡️ Básico</h4>
+                        <ul>
+                            <li>✅ Habilitar autenticação (--auth)</li>
+                            <li>✅ Criar usuários com permissões mínimas</li>
+                            <li>✅ Usar senhas fortes</li>
+                            <li>✅ Configurar bind_ip adequadamente</li>
+                            <li>✅ Habilitar SSL/TLS</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">🚀 Avançado</h4>
+                        <ul>
+                            <li>✅ Criptografia em repouso</li>
+                            <li>✅ Auditoria de operações</li>
+                            <li>✅ Backup automático</li>
+                            <li>✅ Monitoramento de performance</li>
+                            <li>✅ Firewall e VPN</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🔄 Script Python para Backup Automático</div>
+                <pre><code class="language-python">import subprocess
+import datetime
+import os
+
+def backup_automatico():
+    """Realiza backup automático do banco de dados"""
+    
+    data_atual = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    pasta_backup = f"/backup/escola_{data_atual}"
+    
+    try:
+        # Comando de backup
+        comando = [
+            "mongodump",
+            "--host", "localhost:27017",
+            "--db", "escola",
+            "--gzip",
+            "--out", pasta_backup
+        ]
+        
+        # Executar backup
+        resultado = subprocess.run(comando, capture_output=True, text=True)
+        
+        if resultado.returncode == 0:
+            print(f"✅ Backup realizado com sucesso: {pasta_backup}")
+            
+            # Remover backups antigos (manter últimos 7 dias)
+            limpar_backups_antigos("/backup/", dias=7)
+            
+        else:
+            print(f"❌ Erro no backup: {resultado.stderr}")
+            
+    except Exception as e:
+        print(f"❌ Erro ao executar backup: {e}")
+
+def limpar_backups_antigos(pasta, dias=7):
+    """Remove backups mais antigos que X dias"""
+    import time
+    
+    agora = time.time()
+    limite = agora - (dias * 24 * 60 * 60)
+    
+    for arquivo in os.listdir(pasta):
+        caminho = os.path.join(pasta, arquivo)
+        if os.path.isdir(caminho) and arquivo.startswith("escola_"):
+            if os.path.getctime(caminho) < limite:
+                import shutil
+                shutil.rmtree(caminho)
+                print(f"🗑️ Backup removido: {arquivo}")
+
+# Agendar backup diário
+if __name__ == "__main__":
+    backup_automatico()</code></pre>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2><span class="emoji">🎓</span>Resumo Final - MongoDB Avançado</h2>
+            
+            <div class="concept-box">
+                <h3>🏆 Conquistas Desbloqueadas:</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px;">
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">🔗 Relacionamentos</h4>
+                        <ul>
+                            <li>✅ $lookup entre coleções</li>
+                            <li>✅ Pipelines de agregação</li>
+                            <li>✅ Cruzamento entre bancos</li>
+                            <li>✅ Joins complexos</li>
+                        </ul>
+
+                        <h4 style="color: #4ecdc4; margin: 20px 0 15px;">🎯 Filtros Avançados</h4>
+                        <ul>
+                            <li>✅ Operadores de comparação</li>
+                            <li>✅ Regex e busca textual</li>
+                            <li>✅ Filtros de array e datas</li>
+                            <li>✅ Validação de dados</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">📊 Agregação e Análise</h4>
+                        <ul>
+                            <li>✅ Estatísticas complexas</li>
+                            <li>✅ Agrupamentos avançados</li>
+                            <li>✅ Relatórios dinâmicos</li>
+                            <li>✅ Campos calculados</li>
+                        </ul>
+
+                        <h4 style="color: #4ecdc4; margin: 20px 0 15px;">📈 Ordenação e Paginação</h4>
+                        <ul>
+                            <li>✅ Sort ASC/DESC múltiplos</li>
+                            <li>✅ Limit e skip otimizados</li>
+                            <li>✅ Ranking e top N</li>
+                            <li>✅ Paginação eficiente</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">⚡ Performance</h4>
+                        <ul>
+                            <li>✅ Indexação estratégica</li>
+                            <li>✅ Análise com explain()</li>
+                            <li>✅ Monitoramento de consultas</li>
+                            <li>✅ Otimização de pipelines</li>
+                        </ul>
+
+                        <h4 style="color: #4ecdc4; margin: 20px 0 15px;">🔒 Segurança</h4>
+                        <ul>
+                            <li>✅ Transações ACID</li>
+                            <li>✅ Backup e restore</li>
+                            <li>✅ Controle de acesso</li>
+                            <li>✅ Auditoria e logs</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🚀 Exemplo Final - Pipeline Completo de Produção</div>
+                <pre><code class="language-javascript">// Pipeline para relatório executivo de performance acadêmica
+db.alunos.aggregate([
+  // 1. Filtrar dados válidos
+  {
+    $match: {
+      ativo: true,
+      notas: { $exists: true, $ne: [] },
+      data_matricula: { $gte: new Date("2024-01-01") }
+    }
+  },
+  
+  // 2. Adicionar campos calculados
+  {
+    $addFields: {
+      media: { $avg: "$notas" },
+      situacao: {
+        $switch: {
+          branches: [
+            { case: { $gte: [{ $avg: "$notas" }, 9] }, then: "Excelente" },
+            { case: { $gte: [{ $avg: "$notas" }, 8] }, then: "Ótimo" },
+            { case: { $gte: [{ $avg: "$notas" }, 7] }, then: "Bom" },
+            { case: { $gte: [{ $avg: "$notas" }, 6] }, then: "Regular" }
+          ],
+          default: "Insuficiente"
+        }
+      },
+      tempo_curso: {
+        $divide: [
+          { $subtract: [new Date(), "$data_matricula"] },
+          1000 * 60 * 60 * 24 * 30  // meses
+        ]
+      }
+    }
+  },
+  
+  // 3. Lookup com múltiplas coleções
+  {
+    $lookup: {
+      from: "cursos",
+      localField: "curso_id",
+      foreignField: "_id",
+      as: "curso"
+    }
+  },
+  { $unwind: "$curso" },
+  
+  {
+    $lookup: {
+      from: "turmas",
+      localField: "turma_id",
+      foreignField: "_id",
+      as: "turma"
+    }
+  },
+  { $unwind: "$turma" },
+  
+  // 4. Agrupamento por departamento e situação
+  {
+    $group: {
+      _id: {
+        departamento: "$curso.departamento",
+        situacao: "$situacao"
+      },
+      total_alunos: { $sum: 1 },
+      media_geral: { $avg: "$media" },
+      tempo_medio_curso: { $avg: "$tempo_curso" },
+      alunos_detalhes: {
+        $push: {
+          nome: "$nome",
+          curso: "$curso.nome",
+          turma: "$turma.codigo",
+          media: { $round: ["$media", 2] }
+        }
+      }
+    }
+  },
+  
+  // 5. Estruturar resultado final
+  {
+    $group: {
+      _id: "$_id.departamento",
+      situacoes: {
+        $push: {
+          situacao: "$_id.situacao",
+          total: "$total_alunos",
+          media: { $round: ["$media_geral", 2] },
+          tempo_medio: { $round: ["$tempo_medio_curso", 1] }
+        }
+      },
+      total_departamento: { $sum: "$total_alunos" }
+    }
+  },
+  
+  // 6. Ordenação final
+  { $sort: { total_departamento: -1, _id: 1 } }
+])
+
+// 🎯 Resultado: Relatório completo por departamento com todas as métricas!</code></pre>
+            </div>
+
+            <div class="concept-box" style="margin-top: 30px;">
+                <h3>🎯 Próxima Jornada - MongoDB Expert:</h3>
+                <div class="concept-item">
+                    <strong>📡 MongoDB Atlas:</strong> Deploy em nuvem com clusters globais
+                </div>
+                <div class="concept-item">
+                    <strong>🔄 Change Streams:</strong> Monitoramento em tempo real de mudanças
+                </div>
+                <div class="concept-item">
+                    <strong>🌐 Sharding:</strong> Distribuição horizontal para milhões de documentos
+                </div>
+                <div class="concept-item">
+                    <strong>🔍 Full-Text Search:</strong> Busca avançada com MongoDB Atlas Search
+                </div>
+                <div class="concept-item">
+                    <strong>🤖 MongoDB Realm:</strong> Sincronização mobile e edge computing
+                </div>
+                <div class="concept-item">
+                    <strong>📊 MongoDB Charts:</strong> Visualização de dados integrada
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px; font-size: 1.3rem;">
+                <p style="color: #4ecdc4; margin-bottom: 15px;">🎉 <strong>Parabéns!</strong> Você agora é um(a) MongoDB Developer Avançado(a)!</p>
+                <p style="color: #a8d8ff; margin-bottom: 20px;">Dominou CRUD básico → CRUD avançado → Operações de produção</p>
+                <div style="font-size: 2.5rem; margin: 20px 0;">🚀💾🔥⚡🎓</div>
+                <p style="color: #ffd93d; font-size: 1.1rem;">Continue praticando e explorando as funcionalidades avançadas!</p>
+            </div>
+        </div>
+
+        <!-- Slide 15: Lista de Exercícios -->
+        <div class="slide">
+            <h2><span class="emoji">📝</span>Lista de Exercícios - Prática Hands-On</h2>
+            
+            <div class="concept-box">
+                <h3>🎯 10 Exercícios: Do Simples ao Complexo</h3>
+                <p style="margin-bottom: 20px;">
+                    Pratique os conceitos aprendidos com exercícios progressivos usando <span class="highlight">mongosh</span> e <span class="highlight">PyMongo</span>
+                </p>
+            </div>
+
+            <div class="concept-box" style="border-left-color: #4ecdc4;">
+                <h3>🔧 Preparação dos Dados</h3>
+                <p>Execute primeiro estes comandos para criar a base de dados dos exercícios:</p>
+                <div class="code-container">
+                    <pre><code class="language-javascript">// Dados para os exercícios
+db.alunos.insertMany([
+  { nome: "Ana Silva", idade: 20, curso: "Engenharia", notas: [8.5, 9.0, 7.5], cidade: "São Paulo", ativo: true, data_matricula: new Date("2023-03-15") },
+  { nome: "Bruno Santos", idade: 22, curso: "Medicina", notas: [9.5, 8.0, 9.0], cidade: "Rio de Janeiro", ativo: true, data_matricula: new Date("2023-02-01") },
+  { nome: "Carlos Lima", idade: 19, curso: "Engenharia", notas: [7.0, 6.5, 8.0], cidade: "São Paulo", ativo: false, data_matricula: new Date("2023-01-10") },
+  { nome: "Diana Costa", idade: 25, curso: "Direito", notas: [8.0, 9.0, 8.5], cidade: "Belo Horizonte", ativo: true, data_matricula: new Date("2022-08-20") },
+  { nome: "Eduardo Rocha", idade: 21, curso: "Computação", notas: [9.0, 9.5, 8.5], cidade: "São Paulo", ativo: true, data_matricula: new Date("2023-04-12") }
+])
+
+db.cursos.insertMany([
+  { nome: "Engenharia", departamento: "Exatas", duracao: 5, coordenador: "Prof. Silva" },
+  { nome: "Medicina", departamento: "Saúde", duracao: 6, coordenador: "Prof. Santos" },
+  { nome: "Direito", departamento: "Humanas", duracao: 5, coordenador: "Prof. Lima" },
+  { nome: "Computação", departamento: "Exatas", duracao: 4, coordenador: "Prof. Costa" }
+])</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 16: Exercícios 1-5 -->
+        <div class="slide">
+            <h2><span class="emoji">🥉</span>Exercícios 1-5: Nível Iniciante</h2>
+            
+            <div class="concept-box">
+                <div class="concept-item">
+                    <strong>📝 Exercício 1:</strong> Listar todos os alunos ativos com idade maior que 20 anos, ordenados por nome.
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use find() com filtros e sort()<br>
+                        <strong>Python:</strong> Implemente com PyMongo usando filtros e ordenação
+                    </div>
+                </div>
+
+                <div class="concept-item">
+                    <strong>📝 Exercício 2:</strong> Contar quantos alunos existem por curso e mostrar apenas cursos com mais de 1 aluno.
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use aggregate() com $group e $match<br>
+                        <strong>Python:</strong> Crie uma função que retorne um dicionário com o resultado
+                    </div>
+                </div>
+
+                <div class="concept-item">
+                    <strong>📝 Exercício 3:</strong> Encontrar todos os alunos cujo nome contém "Silva" (case-insensitive).
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use $regex com $options<br>
+                        <strong>Python:</strong> Implemente busca por regex usando re (módulo Python)
+                    </div>
+                </div>
+
+                <div class="concept-item">
+                    <strong>📝 Exercício 4:</strong> Calcular a média geral de notas de todos os alunos ativos.
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use aggregate() com $unwind e $group<br>
+                        <strong>Python:</strong> Processe os dados e calcule a média usando statistics.mean()
+                    </div>
+                </div>
+
+                <div class="concept-item">
+                    <strong>📝 Exercício 5:</strong> Listar os 3 alunos com maior média individual, mostrando nome, curso e média.
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use $addFields para calcular média, depois $sort e $limit<br>
+                        <strong>Python:</strong> Calcule médias em memória e use sorted() com key personalizada
+                    </div>
+                </div>
+            </div>
+
+            <div class="warning">
+                <strong>💡 Dica:</strong> Teste cada exercício no MongoDB Compass antes de implementar em Python!
+            </div>
+        </div>
+
+        <!-- Slide 17: Exercícios 6-10 -->
+        <div class="slide">
+            <h2><span class="emoji">🥇</span>Exercícios 6-10: Nível Avançado</h2>
+            
+            <div class="concept-box">
+                <div class="concept-item">
+                    <strong>📝 Exercício 6:</strong> Criar um relatório completo de alunos por departamento usando lookup entre as coleções alunos e cursos.
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use $lookup, $group e $project para estruturar o relatório<br>
+                        <strong>Python:</strong> Implemente uma função que retorne dados estruturados por departamento
+                    </div>
+                </div>
+
+                <div class="concept-item">
+                    <strong>📝 Exercício 7:</strong> Encontrar alunos matriculados nos últimos 6 meses e classificá-los por faixa de média (Excelente: ≥9, Bom: 7-8.9, Regular: <7).
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use filtros de data e $switch para classificação<br>
+                        <strong>Python:</strong> Use datetime para filtros e if/elif para classificação
+                    </div>
+                </div>
+
+                <div class="concept-item">
+                    <strong>📝 Exercício 8:</strong> Criar um sistema de busca textual que encontre alunos por nome parcial e ordene por relevância.
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Crie índice de texto e use $text com $meta: "textScore"<br>
+                        <strong>Python:</strong> Implemente busca fuzzy usando regex e score personalizado
+                    </div>
+                </div>
+
+                <div class="concept-item">
+                    <strong>📝 Exercício 9:</strong> Implementar um sistema de transferência de aluno entre cursos usando transações.
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use sessões e transações para operações atômicas<br>
+                        <strong>Python:</strong> Implemente com context manager e tratamento de erros
+                    </div>
+                </div>
+
+                <div class="concept-item">
+                    <strong>📝 Exercício 10:</strong> Criar um dashboard analítico completo com: total de alunos, distribuição por curso, top 5 médias, alunos por cidade e gráfico de matrículas por mês.
+                    <div style="margin-top: 10px; color: #a8d8ff; font-size: 0.9rem;">
+                        <strong>mongosh:</strong> Use $facet para múltiplas agregações em uma consulta<br>
+                        <strong>Python:</strong> Crie classe Dashboard com métodos para cada métrica e visualização
+                    </div>
+                </div>
+            </div>
+
+            <div class="success">
+                <strong>🚀 Desafio Extra:</strong> Combine todos os exercícios em uma aplicação web usando Flask/FastAPI + MongoDB!
+            </div>
+        </div>
+
+        <!-- Slide 18: Gabaritos e Soluções -->
+        <div class="slide">
+            <h2><span class="emoji">✅</span>Dicas e Estrutura das Soluções</h2>
+            
+            <div class="two-column">
+                <div>
+                    <h3>🐚 Exemplo mongosh (Ex. 1)</h3>
+                    <div class="code-container">
+                        <pre><code class="language-javascript">// Exercício 1: Alunos ativos > 20 anos
+db.alunos.find({
+  ativo: true,
+  idade: { $gt: 20 }
+}).sort({ nome: 1 })</code></pre>
+                    </div>
+
+                    <h3>🧮 Exemplo Agregação (Ex. 2)</h3>
+                    <div class="code-container">
+                        <pre><code class="language-javascript">// Exercício 2: Contar por curso
+db.alunos.aggregate([
+  {
+    $group: {
+      _id: "$curso",
+      total: { $sum: 1 }
+    }
+  },
+  {
+    $match: { total: { $gt: 1 } }
+  }
+])</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <h3>🐍 Exemplo Python (Ex. 1)</h3>
+                    <div class="code-container">
+                        <pre><code class="language-python"># Exercício 1: Python
+from pymongo import MongoClient
+
+client = MongoClient()
+db = client.escola
+
+def alunos_ativos_maiores_20():
+    resultado = db.alunos.find({
+        "ativo": True,
+        "idade": {"$gt": 20}
+    }).sort("nome", 1)
+    
+    return list(resultado)
+
+alunos = alunos_ativos_maiores_20()
+for aluno in alunos:
+    print(f"{aluno['nome']} - {aluno['idade']} anos")</code></pre>
+                    </div>
+
+                    <h3>📊 Estrutura Dashboard (Ex. 10)</h3>
+                    <div class="code-container">
+                        <pre><code class="language-python"># Estrutura do Dashboard
+class DashboardEscolar:
+    def __init__(self, db):
+        self.db = db
+    
+    def metricas_gerais(self):
+        return {
+            "total_alunos": self.total_alunos(),
+            "por_curso": self.distribuicao_curso(),
+            "top_medias": self.top_medias(),
+            "por_cidade": self.alunos_por_cidade()
+        }
+    
+    def total_alunos(self):
+        # Implementar contagem
+        pass
+    
+    # ... outros métodos</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box">
+                <h3>🎯 Como Abordar os Exercícios:</h3>
+                <ul>
+                    <li><strong>1. Planejamento:</strong> Entenda o que o exercício pede antes de programar</li>
+                    <li><strong>2. mongosh primeiro:</strong> Teste as consultas no shell antes do Python</li>
+                    <li><strong>3. Validação:</strong> Confira se os resultados fazem sentido</li>
+                    <li><strong>4. Otimização:</strong> Use explain() para verificar performance</li>
+                    <li><strong>5. Documentação:</strong> Comente seu código explicando a lógica</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <p style="color: #4ecdc4; font-size: 1.2rem;">💪 <strong>Hora de praticar!</strong></p>
+                <p style="color: #a8d8ff;">Resolva os exercícios para consolidar seu conhecimento MongoDB</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação -->
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo →</button>
+    </div>
+
+    <!-- Contador de slides -->
+    <div class="slide-counter">
+        <span id="slideCounter">1 / 17</span>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            // Remove active class from all slides
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // Normalize slide index
+            if (n >= totalSlides) currentSlide = 0;
+            if (n < 0) currentSlide = totalSlides - 1;
+            
+            // Show current slide
+            slides[currentSlide].classList.add('active');
+            
+            // Update counter
+            document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (event.key === 'ArrowRight') {
+                changeSlide(1);
+            } else if (event.key === 'Home') {
+                currentSlide = 0;
+                showSlide(currentSlide);
+            } else if (event.key === 'End') {
+                currentSlide = totalSlides - 1;
+                showSlide(currentSlide);
+            }
+        });
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
+                <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Avançado MongoDB - Aula 4</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: none;
+            height: 100vh;
+            padding: 40px 60px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 0;
+            border: none;
+            overflow-y: auto;
+            animation: slideIn 0.5s ease-out;
+            box-sizing: border-box;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #fff, #a8d8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 25px;
+            color: #4ecdc4;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            margin: 20px 0 15px;
+            color: #ffd93d;
+        }
+
+        .emoji {
+            font-size: 2rem;
+        }
+
+        .code-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #4ecdc4;
+        }
+
+        .code-title {
+            color: #4ecdc4;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        pre {
+            margin: 0 !important;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .concept-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #ffd93d;
+        }
+
+        .concept-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4ecdc4;
+        }
+
+        .concept-item strong {
+            color: #4ecdc4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .warning {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #ffb3b3;
+        }
+
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #c8e6c9;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, rgba(255, 217, 61, 0.3) 0%, rgba(255, 217, 61, 0.1) 100%);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ffd93d;
+            font-weight: bold;
+        }
+
+        ul {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .three-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .two-column, .three-column {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.8rem;
+            }
+            
+            .slide {
+                padding: 20px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Slide 1: Título -->
+        <div class="slide active">
+            <h1>CRUD Avançado MongoDB</h1>
+            <div style="text-align: center; margin: 40px 0;">
+                <div style="font-size: 4rem; margin: 30px 0;">🚀</div>
+                <h2 style="margin-bottom: 20px;">Operações Avançadas & Relacionamentos</h2>
+                <div style="font-size: 1.2rem; color: #a8d8ff; line-height: 1.6;">
+                    <p>Agregações • Lookup • Ordenação • Filtros Avançados</p>
+                    <p>Continuidade da Aula 3 - CRUD Básico</p>
+                </div>
+            </div>
+            <div class="concept-box" style="margin-top: 50px;">
+                <h3>🎯 O que você vai dominar:</h3>
+                <ul>
+                    <li>Cruzamento de coleções (mesmo banco e bancos diferentes)</li>
+                    <li>Filtros avançados e operadores complexos</li>
+                    <li>Ordenação ASC/DESC e limitação de resultados</li>
+                    <li>Agregações e pipeline de dados</li>
+                    <li>Indexação para performance</li>
+                    <li>Implementação em Python avançada</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 2: Preparação dos Dados -->
+        <div class="slide">
+            <h2><span class="emoji">🔧</span>Preparação - Criando Dados Relacionados</h2>
+            
+            <div class="concept-box">
+                <p style="font-size: 1.2rem; margin-bottom: 20px;">
+                    Vamos criar um sistema escolar com <span class="highlight">múltiplas coleções relacionadas</span>:
+                </p>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🏫 Coleção: alunos</div>
+                <pre><code class="language-javascript">db["alunos"].insertMany([
+  {
+    _id: ObjectId("507f1f77bcf86cd799439011"),
+    nome: "João Silva",
+    idade: 20,
+    curso_id: ObjectId("507f1f77bcf86cd799439021"),
+    turma_id: ObjectId("507f1f77bcf86cd799439031"),
+    notas: [8.5, 9.0, 7.5],
+    ativo: true,
+    data_matricula: new Date("2024-01-15")
+  },
+  {
+    _id: ObjectId("507f1f77bcf86cd799439012"),
+    nome: "Maria Santos",
+    idade: 22,
+    curso_id: ObjectId("507f1f77bcf86cd799439022"),
+    turma_id: ObjectId("507f1f77bcf86cd799439032"),
+    notas: [9.5, 8.0, 9.0],
+    ativo: true,
+    data_matricula: new Date("2024-02-01")
+  }
+])</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">📚 Coleção: cursos</div>
+                        <pre><code class="language-javascript">// Classificar alunos
+db.alunos.aggregate([
+  {
+    $addFields: {
+      status: {
+        $cond: {
+          if: { $gte: [{ $avg: "$notas" }, 7] },
+          then: "Aprovado",
+          else: "Reprovado"
+        }
+      }
+    }
+  },
+  {
+    $group: {
+      _id: "$status",
+      count: { $sum: 1 }
+    }
+  }
+])</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔥 Operadores de Agregação Úteis:</h3>
+                <ul>
+                    <li><strong>$match:</strong> filtrar documentos (como WHERE)</li>
+                    <li><strong>$group:</strong> agrupar e calcular (como GROUP BY)</li>
+                    <li><strong>$project:</strong> selecionar campos (como SELECT)</li>
+                    <li><strong>$sort:</strong> ordenar resultados</li>
+                    <li><strong>$limit/$skip:</strong> paginação</li>
+                    <li><strong>$lookup:</strong> JOIN entre coleções</li>
+                    <li><strong>$addFields:</strong> adicionar campos calculados</li>
+                    <li><strong>$unwind:</strong> desestruturar arrays</li>
+                    <li><strong>$bucket:</strong> agrupar por faixas de valores</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 8: Operações de Texto e Busca -->
+        <div class="slide">
+            <h2><span class="emoji">🔍</span>Busca Textual e Operações de String</h2>
+            
+            <div class="code-container">
+                <div class="code-title">📝 Criando Índice de Texto</div>
+                <pre><code class="language-javascript">// Criar índice de texto em múltiplos campos
+db.alunos.createIndex({
+  nome: "text",
+  curso: "text"
+}, {
+  default_language: "portuguese",
+  name: "busca_texto_alunos"
+})
+
+// Busca textual simples
+db.alunos.find({ $text: { $search: "João Silva" } })
+
+// Busca com frase exata
+db.alunos.find({ $text: { $search: "\"João Silva\"" } })
+
+// Busca excluindo termos
+db.alunos.find({ $text: { $search: "João -Silva" } })</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🎯 Regex Avançado</div>
+                        <pre><code class="language-javascript">// Nomes que começam com "J"
+db.alunos.find({
+  nome: { $regex: "^J", $options: "i" }
+})
+
+// Nomes que terminam com "Silva"
+db.alunos.find({
+  nome: { $regex: "Silva$", $options: "i" }
+})
+
+// Email válido (padrão básico)
+db.alunos.find({
+  email: {
+    $regex: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+  }
+})
+
+// CPF com formatação
+db.alunos.find({
+  cpf: { $regex: "^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$" }
+})</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">✂️ Manipulação de Strings</div>
+                        <pre><code class="language-javascript">// Dividir nome em partes
+db.alunos.aggregate([
+  {
+    $addFields: {
+      primeiro_nome: {
+        $arrayElemAt: [
+          { $split: ["$nome", " "] }, 0
+        ]
+      },
+      ultimo_nome: {
+        $arrayElemAt: [
+          { $split: ["$nome", " "] }, -1
+        ]
+      },
+      iniciais: {
+        $substr: ["$nome", 0, 1]
+      },
+      nome_upper: { $toUpper: "$nome" },
+      nome_lower: { $toLower: "$nome" }
+    }
+  }
+])</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🔎 Busca Fuzzy (Aproximada) com Agregação</div>
+                <pre><code class="language-javascript">db.alunos.aggregate([
+  {
+    $addFields: {
+      score: {
+        $cond: {
+          if: { $regexMatch: { input: "$nome", regex: "Joao|João", options: "i" } },
+          then: 10,
+          else: {
+            $cond: {
+              if: { $regexMatch: { input: "$nome", regex: "Jo", options: "i" } },
+              then: 5,
+              else: 0
+            }
+          }
+        }
+      }
+    }
+  },
+  { $match: { score: { $gt: 0 } } },
+  { $sort: { score: -1, nome: 1 } }
+])</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>💡 Dicas de Busca Textual:</h3>
+                <ul>
+                    <li><strong>Índices de texto:</strong> Essenciais para performance em buscas</li>
+                    <li><strong>Língua portuguesa:</strong> Configure default_language para melhor tokenização</li>
+                    <li><strong>Score de relevância:</strong> Use { score: { $meta: "textScore" } } para ordenar por relevância</li>
+                    <li><strong>Regex vs Text Search:</strong> Regex para padrões específicos, Text Search para busca natural</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 9: Operações de Data e Validação -->
+        <div class="slide">
+            <h2><span class="emoji">📅</span>Operações de Data e Validação</h2>
+            
+            <div class="code-container">
+                <div class="code-title">📅 Operações com Datas</div>
+                <pre><code class="language-javascript">// Adicionar campos de data calculados
+db.alunos.aggregate([
+  {
+    $addFields: {
+      // Idade calculada pela data de nascimento
+      idade_calculada: {
+        $divide: [
+          { $subtract: [new Date(), "$data_nascimento"] },
+          365.25 * 24 * 60 * 60 * 1000  // milissegundos em um ano
+        ]
+      },
+      
+      // Ano de matrícula
+      ano_matricula: { $year: "$data_matricula" },
+      
+      // Mês de matrícula
+      mes_matricula: { $month: "$data_matricula" },
+      
+      // Tempo desde matrícula (em dias)
+      dias_matriculado: {
+        $divide: [
+          { $subtract: [new Date(), "$data_matricula"] },
+          24 * 60 * 60 * 1000  // milissegundos em um dia
+        ]
+      },
+      
+      // Data formatada
+      data_formatada: {
+        $dateToString: {
+          format: "%d/%m/%Y",
+          date: "$data_matricula"
+        }
+      }
+    }
+  }
+])</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🎯 Filtros por Período</div>
+                        <pre><code class="language-javascript">// Matriculados no último mês
+db.alunos.find({
+  data_matricula: {
+    $gte: new Date(Date.now() - 30*24*60*60*1000)
+  }
+})
+
+// Matriculados em 2024
+db.alunos.find({
+  data_matricula: {
+    $gte: new Date("2024-01-01"),
+    $lt: new Date("2025-01-01")
+  }
+})
+
+// Aniversariantes do mês
+db.alunos.find({
+  $expr: {
+    $eq: [
+      { $month: "$data_nascimento" },
+      { $month: new Date() }
+    ]
+  }
+})</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">✅ Validação de Dados</div>
+                        <pre><code class="language-javascript">// Criar schema de validação
+db.createCollection("alunos_validados", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["nome", "idade", "email"],
+      properties: {
+        nome: {
+          bsonType: "string",
+          minLength: 2,
+          maxLength: 100
+        },
+        idade: {
+          bsonType: "int",
+          minimum: 16,
+          maximum: 100
+        },
+        email: {
+          bsonType: "string",
+          pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+        },
+        notas: {
+          bsonType: "array",
+          items: {
+            bsonType: "double",
+            minimum: 0,
+            maximum: 10
+          }
+        }
+      }
+    }
+  },
+  validationAction: "error"
+})</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🔍 Encontrar Dados Inconsistentes</div>
+                <pre><code class="language-javascript">// Alunos com dados problemáticos
+db.alunos.aggregate([
+  {
+    $addFields: {
+      problemas: {
+        $concatArrays: [
+          // Nome muito curto
+          {
+            $cond: [
+              { $lt: [{ $strLenCP: "$nome" }, 2] },
+              ["Nome muito curto"],
+              []
+            ]
+          },
+          // Idade fora do padrão
+          {
+            $cond: [
+              { $or: [{ $lt: ["$idade", 16] }, { $gt: ["$idade", 100] }] },
+              ["Idade inválida"],
+              []
+            ]
+          },
+          // Sem notas
+          {
+            $cond: [
+              { $eq: [{ $size: { $ifNull: ["$notas", []] } }, 0] },
+              ["Sem notas"],
+              []
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    $match: {
+      $expr: { $gt: [{ $size: "$problemas" }, 0] }
+    }
+  },
+  {
+    $project: {
+      nome: 1,
+      idade: 1,
+      notas: 1,
+      problemas: 1
+    }
+  }
+])</code></pre>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2><span class="emoji">🐍</span>Python Avançado com PyMongo</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🚀 Classe Completa para Gestão Escolar</div>
+                <pre><code class="language-python">from pymongo import MongoClient, ASCENDING, DESCENDING
+from bson import ObjectId
+from datetime import datetime, timedelta
+import re
+
+class GestaoEscolar:
+    def __init__(self, connection_string="mongodb://localhost:27017", db_name="escola"):
+        self.client = MongoClient(connection_string)
+        self.db = self.client[db_name]
+        self.alunos = self.db["alunos"]
+        self.cursos = self.db["cursos"]
+        self.turmas = self.db["turmas"]
+        
+        # Criar índices automaticamente
+        self._criar_indices()
+    
+    def _criar_indices(self):
+        """Cria índices essenciais para performance"""
+        try:
+            # Índices para alunos
+            self.alunos.create_index([("nome", 1)])
+            self.alunos.create_index([("curso_id", 1), ("ativo", 1)])
+            self.alunos.create_index([("data_matricula", -1)])
+            self.alunos.create_index([("nome", "text")])
+            
+            # Índices para cursos
+            self.cursos.create_index([("nome", 1)])
+            self.cursos.create_index([("departamento", 1)])
+            
+            print("✅ Índices criados com sucesso!")
+        except Exception as e:
+            print(f"⚠️ Erro ao criar índices: {e}")
+    
+    def buscar_alunos_completo(self, filtros=None, ordenacao=None, limite=None, pagina=1):
+        """
+        Busca avançada com filtros, ordenação e paginação
+        """
+        pipeline = []
+        
+        # Aplicar filtros
+        if filtros:
+            pipeline.append({"$match": filtros})
+        
+        # Lookup com curso
+        pipeline.extend([
+            {
+                "$lookup": {
+                    "from": "cursos",
+                    "localField": "curso_id",
+                    "foreignField": "_id",
+                    "as": "curso"
+                }
+            },
+            {"$unwind": {"path": "$curso", "preserveNullAndEmptyArrays": True}},
+            
+            # Adicionar campos calculados
+            {
+                "$addFields": {
+                    "media": {"$avg": "$notas"},
+                    "total_notas": {"$size": {"$ifNull": ["$notas", []]}},
+                    "curso_nome": {"$ifNull": ["$curso.nome", "Sem curso"]},
+                    "departamento": {"$ifNull": ["$curso.departamento", "Sem departamento"]}
+                }
+            }
+        ])
+        
+        # Aplicar ordenação
+        if ordenacao:
+            pipeline.append({"$sort": ordenacao})
+        else:
+            pipeline.append({"$sort": {"nome": 1}})
+        
+        # Paginação
+        if limite:
+            skip = (pagina - 1) * limite
+            pipeline.extend([
+                {"$skip": skip},
+                {"$limit": limite}
+            ])
+        
+        return list(self.alunos.aggregate(pipeline))
+    
+    def estatisticas_gerais(self):
+        """Gera relatório completo de estatísticas"""
+        pipeline = [
+            {
+                "$facet": {
+                    # Estatísticas por curso
+                    "por_curso": [
+                        {"$match": {"ativo": True}},
+                        {
+                            "$group": {
+                                "_id": "$curso_id",
+                                "total_alunos": {"$sum": 1},
+                                "media_idade": {"$avg": "$idade"},
+                                "media_notas": {"$avg": {"$avg": "$notas"}}
+                            }
+                        },
+                        {
+                            "$lookup": {
+                                "from": "cursos",
+                                "localField": "_id",
+                                "foreignField": "_id",
+                                "as": "curso"
+                            }
+                        },
+                        {"$unwind": "$curso"},
+                        {
+                            "$project": {
+                                "curso_nome": "$curso.nome",
+                                "departamento": "$curso.departamento",
+                                "total_alunos": 1,
+                                "media_idade": {"$round": ["$media_idade", 1]},
+                                "media_notas": {"$round": ["$media_notas", 2]}
+                            }
+                        }
+                    ],
+                    
+                    # Distribuição por faixa etária
+                    "por_idade": [
+                        {
+                            "$bucket": {
+                                "groupBy": "$idade",
+                                "boundaries": [16, 20, 25, 30, 40],
+                                "default": "40+",
+                                "output": {
+                                    "count": {"$sum": 1},
+                                    "media_notas": {"$avg": {"$avg": "$notas"}}
+                                }
+                            }
+                        }
+                    ],
+                    
+                    # Alunos por status
+                    "por_status": [
+                        {
+                            "$addFields": {
+                                "status": {
+                                    "$cond": {
+                                        "if": {"$gte": [{"$avg": "$notas"}, 7]},
+                                        "then": "Aprovado",
+                                        "else": "Reprovado"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "$group": {
+                                "_id": "$status",
+                                "count": {"$sum": 1}
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+        
+        resultado = list(self.alunos.aggregate(pipeline))[0]
+        return resultado
+    
+    def busca_textual_avancada(self, termo_busca, incluir_curso=True):
+        """Busca textual avançada com score de relevância"""
+        pipeline = [
+            {"$match": {"$text": {"$search": termo_busca}}},
+            {"$addFields": {"score": {"$meta": "textScore"}}},
+        ]
+        
+        if incluir_curso:
+            pipeline.extend([
+                {
+                    "$lookup": {
+                        "from": "cursos",
+                        "localField": "curso_id",
+                        "foreignField": "_id",
+                        "as": "curso"
+                    }
+                },
+                {"$unwind": {"path": "$curso", "preserveNullAndEmptyArrays": True}}
+            ])
+        
+        pipeline.extend([
+            {"$sort": {"score": {"$meta": "textScore"}, "nome": 1}},
+            {
+                "$project": {
+                    "nome": 1,
+                    "idade": 1,
+                    "curso_nome": {"$ifNull": ["$curso.nome", "Sem curso"]},
+                    "media": {"$avg": "$notas"},
+                    "score": 1
+                }
+            }
+        ])
+        
+        return list(self.alunos.aggregate(pipeline))
+    
+    def relatorio_mensal(self, ano=None, mes=None):
+        """Relatório de matrículas por mês"""
+        if not ano:
+            ano = datetime.now().year
+        if not mes:
+            mes = datetime.now().month
+        
+        inicio_mes = datetime(ano, mes, 1)
+        if mes == 12:
+            fim_mes = datetime(ano + 1, 1, 1)
+        else:
+            fim_mes = datetime(ano, mes + 1, 1)
+        
+        pipeline = [
+            {
+                "$match": {
+                    "data_matricula": {
+                        "$gte": inicio_mes,
+                        "$lt": fim_mes
+                    }
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "cursos",
+                    "localField": "curso_id",
+                    "foreignField": "_id",
+                    "as": "curso"
+                }
+            },
+            {"$unwind": "$curso"},
+            {
+                "$group": {
+                    "_id": {
+                        "curso": "$curso.nome",
+                        "dia": {"$dayOfMonth": "$data_matricula"}
+                    },
+                    "count": {"$sum": 1},
+                    "alunos": {"$push": "$nome"}
+                }
+            },
+            {"$sort": {"_id.dia": 1, "_id.curso": 1}}
+        ]
+        
+        return list(self.alunos.aggregate(pipeline))
+
+# Exemplo de uso
+escola = GestaoEscolar()
+
+# Busca com filtros avançados
+alunos = escola.buscar_alunos_completo(
+    filtros={"ativo": True, "idade": {"$gte": 20}},
+    ordenacao={"media": -1, "nome": 1},
+    limite=10,
+    pagina=1
+)
+
+# Estatísticas gerais
+stats = escola.estatisticas_gerais()
+
+# Busca textual
+resultados = escola.busca_textual_avancada("João Silva")
+
+print("🎓 Sistema de Gestão Escolar funcionando!")</code></pre>
+            </div>
+        </div>
+
+        <!-- Slide 11: Indexação e Performance -->
+        <div class="slide">
+            <h2><span class="emoji">🐍</span>Python Avançado com PyMongo</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🚀 Implementação completa em Python</div>
+                <pre><code class="language-python">from pymongo import MongoClient
+from bson import ObjectId
+from datetime import datetime, timedelta
+
+class EscolaDB:
+    def __init__(self, connection_string="mongodb://localhost:27017"):
+        self.client = MongoClient(connection_string)
+        self.db = self.client["escola"]
+        self.alunos = self.db["alunos"]
+        self.cursos = self.db["cursos"]
+        self.turmas = self.db["turmas"]
+    
+    def buscar_alunos_com_curso(self, filtro=None):
+        """Busca alunos com dados do curso (lookup)"""
+        pipeline = [
+            {"$match": filtro or {}},
+            {
+                "$lookup": {
+                    "from": "cursos",
+                    "localField": "curso_id",
+                    "foreignField": "_id",
+                    "as": "curso"
+                }
+            },
+            {"$unwind": "$curso"},
+            {
+                "$project": {
+                    "nome": 1,
+                    "idade": 1,
+                    "curso_nome": "$curso.nome",
+                    "departamento": "$curso.departamento",
+                    "media": {"$avg": "$notas"}
+                }
+            }
+        ]
+        return list(self.alunos.aggregate(pipeline))
+    
+    def estatisticas_por_curso(self):
+        """Estatísticas detalhadas por curso"""
+        pipeline = [
+            {"$match": {"ativo": True}},
+            {
+                "$addFields": {
+                    "media_individual": {"$avg": "$notas"}
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$curso_id",
+                    "total_alunos": {"$sum": 1},
+                    "idade_media": {"$avg": "$idade"},
+                    "media_geral": {"$avg": "$media_individual"},
+                    "melhor_nota": {"$max": "$media_individual"}
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "cursos",
+                    "localField": "_id",
+                    "foreignField": "_id",
+                    "as": "curso_info"
+                }
+            },
+            {"$sort": {"media_geral": -1}}
+        ]
+        return list(self.alunos.aggregate(pipeline))
+    
+    def buscar_com_filtros_avancados(self, **kwargs):
+        """Busca com múltiplos filtros"""
+        filtro = {}
+        
+        # Filtro por idade (range)
+        if 'idade_min' in kwargs or 'idade_max' in kwargs:
+            filtro['idade'] = {}
+            if 'idade_min' in kwargs:
+                filtro['idade']['$gte'] = kwargs['idade_min']
+            if 'idade_max' in kwargs:
+                filtro['idade']['$lte'] = kwargs['idade_max']
+        
+        # Filtro por nome (regex)
+        if 'nome_parcial' in kwargs:
+            filtro['nome'] = {"$regex": kwargs['nome_parcial'], "$options": "i"}
+        
+        # Filtro por status
+        if 'ativo' in kwargs:
+            filtro['ativo'] = kwargs['ativo']
+        
+        # Ordenação e limitação
+        ordenacao = kwargs.get('ordenar_por', 'nome')
+        ordem = kwargs.get('ordem', 1)  # 1 = ASC, -1 = DESC
+        limite = kwargs.get('limite', 0)
+        
+        cursor = self.alunos.find(filtro).sort(ordenacao, ordem)
+        if limite > 0:
+            cursor = cursor.limit(limite)
+            
+        return list(cursor)
+
+# Exemplo de uso
+escola = EscolaDB()
+
+# Buscar alunos de Engenharia com idade entre 20-25
+resultado = escola.buscar_com_filtros_avancados(
+    nome_parcial="Silva",
+    idade_min=20,
+    idade_max=25,
+    ativo=True,
+    ordenar_por="idade",
+    ordem=-1,
+    limite=10
+)
+
+print(resultado)</code></pre>
+            </div>
+        </div>
+
+        <!-- Slide 9: Indexação e Performance -->
+        <div class="slide">
+            <h2><span class="emoji">⚡</span>Indexação e Performance</h2>
+            
+            <div class="concept-box">
+                <p style="font-size: 1.2rem; margin-bottom: 20px;">
+                    <span class="highlight">Índices</span> são fundamentais para consultas rápidas em grandes volumes de dados!
+                </p>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">📈 Criando Índices Essenciais</div>
+                <pre><code class="language-javascript">// Índice simples (campo único)
+db.alunos.createIndex({ nome: 1 })
+db.alunos.createIndex({ idade: -1 })
+db.alunos.createIndex({ data_matricula: -1 })
+
+// Índice composto (múltiplos campos)
+db.alunos.createIndex({ curso_id: 1, ativo: 1 })
+db.alunos.createIndex({ ativo: 1, idade: -1 })
+
+// Índice de texto para busca textual
+db.alunos.createIndex({ nome: "text", curso: "text" })
+
+// Índice esparso (só para docs que têm o campo)
+db.alunos.createIndex({ telefone: 1 }, { sparse: true })</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🔍 Analisando Performance</div>
+                        <pre><code class="language-javascript">// Ver plano de execução
+db.alunos.find({ idade: { $gt: 20 } })
+  .explain("executionStats")
+
+// Verificar índices existentes
+db.alunos.getIndexes()
+
+// Estatísticas de uso de índices
+db.alunos.aggregate([
+  { $indexStats: {} }
+])</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🧹 Manutenção de Índices</div>
+                        <pre><code class="language-javascript">// Remover índice
+db.alunos.dropIndex({ nome: 1 })
+
+// Recriar todos os índices
+db.alunos.reIndex()
+
+// Compactar coleção
+db.runCommand({ compact: "alunos" })</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box">
+                <h3>🎯 Boas Práticas de Indexação:</h3>
+                <ul>
+                    <li><strong>Campos de consulta frequente:</strong> Sempre indexe campos usados em find()</li>
+                    <li><strong>Ordem do índice composto:</strong> Campo mais seletivo primeiro</li>
+                    <li><strong>Índices de ordenação:</strong> Crie índices para campos de sort()</li>
+                    <li><strong>Monitore performance:</strong> Use explain() para verificar se índices são usados</li>
+                    <li><strong>Não exagere:</strong> Muitos índices impactam inserções e updates</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 10: Resumo e Próximos Passos -->
+        <div class="slide">
+            <h2><span class="emoji">🎓</span>Resumo e Próximos Passos</h2>
+            
+            <div class="concept-box">
+                <h3>✅ O que você domina agora:</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">🔗 Relacionamentos</h4>
+                        <ul>
+                            <li>✅ Lookup entre coleções ($lookup)</li>
+                            <li>✅ Cruzamento de dados entre bancos</li>
+                            <li>✅ Pipeline de agregação avançado</li>
+                        </ul>
+
+                        <h4 style="color: #4ecdc4; margin: 20px 0 15px;">🎯 Filtros Avançados</h4>
+                        <ul>
+                            <li>✅ Operadores de comparação ($gt, $in, etc.)</li>
+                            <li>✅ Regex e busca textual</li>
+                            <li>✅ Filtros de array e data</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">📊 Ordenação e Agregação</h4>
+                        <ul>
+                            <li>✅ Sort ASC/DESC e múltiplos campos</li>
+                            <li>✅ Limit, skip e paginação</li>
+                            <li>✅ Estatísticas e agrupamentos</li>
+                        </ul>
+
+                        <h4 style="color: #4ecdc4; margin: 20px 0 15px;">⚡ Performance</h4>
+                        <ul>
+                            <li>✅ Criação e gestão de índices</li>
+                            <li>✅ Análise de performance com explain()</li>
+                            <li>✅ Implementação otimizada em Python</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box" style="margin-top: 30px;">
+                <h3>🚀 Próximos Níveis para Explorar:</h3>
+                <div class="concept-item">
+                    <strong>🔄 Transações:</strong> ACID compliance para operações críticas
+                </div>
+                <div class="concept-item">
+                    <strong>🌐 Replicação:</strong> Alta disponibilidade com replica sets
+                </div>
+                <div class="concept-item">
+                    <strong>📈 Sharding:</strong> Escalabilidade horizontal para big data
+                </div>
+                <div class="concept-item">
+                    <strong>🔒 Segurança:</strong> Autenticação, autorização e criptografia
+                </div>
+                <div class="concept-item">
+                    <strong>🎨 MongoDB Atlas:</strong> Banco como serviço na nuvem
+                </div>
+                <div class="concept-item">
+                    <strong>🧠 Machine Learning:</strong> Integração com frameworks de ML
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px; font-size: 1.2rem;">
+                <p style="color: #4ecdc4;">🎉 <strong>Excelente!</strong> Você agora domina MongoDB avançado!</p>
+                <p style="margin-top: 15px; color: #a8d8ff;">Continue praticando com projetos reais para fixar o conhecimento</p>
+                <div style="margin-top: 25px; font-size: 2rem;">🚀📊🔥</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação -->
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo →</button>
+    </div>
+
+    <!-- Contador de slides -->
+    <div class="slide-counter">
+        <span id="slideCounter">1 / 10</span>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            // Remove active class from all slides
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // Normalize slide index
+            if (n >= totalSlides) currentSlide = 0;
+            if (n < 0) currentSlide = totalSlides - 1;
+            
+            // Show current slide
+            slides[currentSlide].classList.add('active');
+            
+            // Update counter
+            document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (event.key === 'ArrowRight') {
+                changeSlide(1);
+            } else if (event.key === 'Home') {
+                currentSlide = 0;
+                showSlide(currentSlide);
+            } else if (event.key === 'End') {
+                currentSlide = totalSlides - 1;
+                showSlide(currentSlide);
+            }
+        });
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>="language-javascript">db["cursos"].insertMany([
+  {
+    _id: ObjectId("507f1f77bcf86cd799439021"),
+    nome: "Engenharia Software",
+    departamento: "Exatas",
+    duracao_semestres: 8,
+    coordenador: "Prof. Carlos"
+  },
+  {
+    _id: ObjectId("507f1f77bcf86cd799439022"),
+    nome: "Medicina",
+    departamento: "Saúde",
+    duracao_semestres: 12,
+    coordenador: "Prof. Ana"
+  }
+])</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">👥 Coleção: turmas</div>
+                        <pre><code class="language-javascript">db["turmas"].insertMany([
+  {
+    _id: ObjectId("507f1f77bcf86cd799439031"),
+    codigo: "ENG2024A",
+    semestre: "2024.1",
+    vagas: 40,
+    curso_id: ObjectId("507f1f77bcf86cd799439021")
+  },
+  {
+    _id: ObjectId("507f1f77bcf86cd799439032"),
+    codigo: "MED2024B",
+    semestre: "2024.1",
+    vagas: 50,
+    curso_id: ObjectId("507f1f77bcf86cd799439022")
+  }
+])</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="success">
+                <strong>✅ Pronto!</strong> Agora temos um sistema com relacionamentos: alunos ↔ cursos ↔ turmas
+            </div>
+        </div>
+
+        <!-- Slide 3: Lookup - Cruzamento de Coleções -->
+        <div class="slide">
+            <h2><span class="emoji">🔗</span>Lookup - Cruzamento de Coleções</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🎯 Buscar alunos COM dados do curso</div>
+                <pre><code class="language-javascript">db["alunos"].aggregate([
+  {
+    $lookup: {
+      from: "cursos",           // coleção para fazer join
+      localField: "curso_id",   // campo local (alunos)
+      foreignField: "_id",      // campo da coleção externa (cursos)
+      as: "dados_curso"         // nome do array resultado
+    }
+  },
+  {
+    $unwind: "$dados_curso"     // transforma array em objeto
+  },
+  {
+    $project: {
+      nome: 1,
+      idade: 1,
+      "curso_nome": "$dados_curso.nome",
+      "departamento": "$dados_curso.departamento",
+      "coordenador": "$dados_curso.coordenador"
+    }
+  }
+])</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🎯 Lookup com múltiplas coleções (aluno + curso + turma)</div>
+                <pre><code class="language-javascript">db["alunos"].aggregate([
+  // Join com cursos
+  {
+    $lookup: {
+      from: "cursos",
+      localField: "curso_id",
+      foreignField: "_id",
+      as: "curso"
+    }
+  },
+  // Join com turmas
+  {
+    $lookup: {
+      from: "turmas",
+      localField: "turma_id",
+      foreignField: "_id",
+      as: "turma"
+    }
+  },
+  // Transformar arrays em objetos
+  { $unwind: "$curso" },
+  { $unwind: "$turma" },
+  // Projeção final
+  {
+    $project: {
+      nome: 1,
+      idade: 1,
+      "curso_nome": "$curso.nome",
+      "turma_codigo": "$turma.codigo",
+      "semestre": "$turma.semestre",
+      media: { $avg: "$notas" }
+    }
+  }
+])</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🧠 Conceitos importantes:</h3>
+                <ul>
+                    <li><strong>$lookup:</strong> faz "JOIN" entre coleções (como SQL)</li>
+                    <li><strong>$unwind:</strong> converte array em objetos separados</li>
+                    <li><strong>$project:</strong> seleciona e renomeia campos</li>
+                    <li><strong>Pipeline:</strong> sequência de operações (como um funil)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 4: Lookup Entre Bancos Diferentes -->
+        <div class="slide">
+            <h2><span class="emoji">🗄️</span>Lookup Entre Bancos Diferentes</h2>
+            
+            <div class="warning">
+                <strong>⚠️ Limitação:</strong> MongoDB não suporta lookup direto entre bancos diferentes. Mas temos alternativas!
+            </div>
+
+            <div class="concept-box">
+                <h3>💡 Estratégias para cruzar dados entre bancos:</h3>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <h3>🐍 Solução em Python</h3>
+                    <div class="code-container">
+                        <div class="code-title">Cruzamento manual com PyMongo</div>
+                        <pre><code class="language-python">from pymongo import MongoClient
+
+# Conexões com bancos diferentes
+client = MongoClient("mongodb://localhost:27017")
+db_escola = client["escola"]
+db_biblioteca = client["biblioteca"]
+
+# Buscar alunos
+alunos = list(db_escola["alunos"].find())
+
+# Para cada aluno, buscar empréstimos
+for aluno in alunos:
+    emprestimos = list(db_biblioteca["emprestimos"].find({
+        "aluno_id": aluno["_id"]
+    }))
+    aluno["emprestimos"] = emprestimos
+
+# Resultado: alunos com seus empréstimos
+print(alunos)</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <h3>🔄 Usando Views (MongoDB 3.4+)</h3>
+                    <div class="code-container">
+                        <div class="code-title">Criar view no banco principal</div>
+                        <pre><code class="language-javascript">// No banco "escola"
+db.createView(
+  "alunos_com_biblioteca",
+  "alunos",
+  [
+    {
+      $lookup: {
+        from: "dados_biblioteca", // coleção espelho
+        localField: "_id",
+        foreignField: "aluno_id",
+        as: "emprestimos"
+      }
+    }
+  ]
+)</code></pre>
+                    </div>
+                    <div class="concept-item">
+                        <strong>💭 Ideia:</strong> Sincronizar dados relevantes entre bancos usando scripts automatizados
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🚀 Solução Avançada: Pipeline Python para múltiplos bancos</div>
+                <pre><code class="language-python">def buscar_dados_completos(aluno_id):
+    # Banco escola
+    aluno = db_escola["alunos"].find_one({"_id": aluno_id})
+    curso = db_escola["cursos"].find_one({"_id": aluno["curso_id"]})
+    
+    # Banco biblioteca
+    emprestimos = list(db_biblioteca["emprestimos"].find({"aluno_id": aluno_id}))
+    
+    # Banco financeiro
+    client_financeiro = MongoClient("mongodb://servidor2:27017")
+    db_financeiro = client_financeiro["financeiro"]
+    mensalidades = list(db_financeiro["pagamentos"].find({"aluno_id": aluno_id}))
+    
+    # Combinar tudo
+    return {
+        "aluno": aluno,
+        "curso": curso,
+        "emprestimos": emprestimos,
+        "situacao_financeira": mensalidades
+    }</code></pre>
+            </div>
+        </div>
+
+        <!-- Slide 5: Filtros Avançados -->
+        <div class="slide">
+            <h2><span class="emoji">🎯</span>Filtros Avançados e Operadores</h2>
+            
+            <div class="three-column">
+                <div>
+                    <h3>📊 Operadores de Comparação</h3>
+                    <div class="code-container">
+                        <pre><code class="language-javascript">// Idade entre 18 e 25
+db.alunos.find({
+  idade: { $gte: 18, $lte: 25 }
+})
+
+// Nome NÃO é "João"
+db.alunos.find({
+  nome: { $ne: "João Silva" }
+})
+
+// Curso em lista específica
+db.alunos.find({
+  curso_id: { 
+    $in: [
+      ObjectId("..."),
+      ObjectId("...")
+    ]
+  }
+})</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <h3>🔤 Operadores de Texto</h3>
+                    <div class="code-container">
+                        <pre><code class="language-javascript">// Busca por regex (parcial)
+db.alunos.find({
+  nome: { $regex: "Silva", $options: "i" }
+})
+
+// Campo existe
+db.alunos.find({
+  telefone: { $exists: true }
+})
+
+// Tipo específico
+db.alunos.find({
+  idade: { $type: "number" }
+})</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <h3>📋 Operadores de Array</h3>
+                    <div class="code-container">
+                        <pre><code class="language-javascript">// Array tem tamanho específico
+db.alunos.find({
+  notas: { $size: 3 }
+})
+
+// Pelo menos uma nota > 9
+db.alunos.find({
+  notas: { $elemMatch: { $gt: 9 } }
+})
+
+// Todas as notas > 7
+db.alunos.find({
+  notas: { $not: { $elemMatch: { $lte: 7 } } }
+})</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🧮 Filtros com Operadores Lógicos</div>
+                <pre><code class="language-javascript">// AND implícito (padrão)
+db.alunos.find({
+  idade: { $gte: 20 },
+  ativo: true
+})
+
+// OR explícito
+db.alunos.find({
+  $or: [
+    { idade: { $lt: 18 } },
+    { idade: { $gt: 30 } }
+  ]
+})
+
+// Combinação complexa: (ativo = true) E (idade > 18 OU tem bolsa)
+db.alunos.find({
+  ativo: true,
+  $or: [
+    { idade: { $gt: 18 } },
+    { bolsa_estudos: { $exists: true } }
+  ]
+})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">📅 Filtros de Data</div>
+                <pre><code class="language-javascript">// Matriculados em 2024
+db.alunos.find({
+  data_matricula: {
+    $gte: new Date("2024-01-01"),
+    $lt: new Date("2025-01-01")
+  }
+})
+
+// Últimos 30 dias
+db.alunos.find({
+  data_matricula: {
+    $gte: new Date(Date.now() - 30*24*60*60*1000)
+  }
+})</code></pre>
+            </div>
+        </div>
+
+        <!-- Slide 6: Ordenação e Limitação -->
+        <div class="slide">
+            <h2><span class="emoji">📈</span>Ordenação ASC/DESC e Limitação</h2>
+            
+            <div class="two-column">
+                <div>
+                    <h3>⬆️⬇️ Ordenação Simples</h3>
+                    <div class="code-container">
+                        <div class="code-title">Crescente (ASC) = 1</div>
+                        <pre><code class="language-javascript">// Por idade (menor para maior)
+db.alunos.find().sort({ idade: 1 })
+
+// Por nome (A para Z)
+db.alunos.find().sort({ nome: 1 })</code></pre>
+                    </div>
+                    
+                    <div class="code-container">
+                        <div class="code-title">Decrescente (DESC) = -1</div>
+                        <pre><code class="language-javascript">// Por idade (maior para menor)
+db.alunos.find().sort({ idade: -1 })
+
+// Por data (mais recente primeiro)
+db.alunos.find().sort({ 
+  data_matricula: -1 
+})</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <h3>🎯 Ordenação Múltipla</h3>
+                    <div class="code-container">
+                        <div class="code-title">Múltiplos campos</div>
+                        <pre><code class="language-javascript">// 1º por curso, depois por idade
+db.alunos.find().sort({
+  curso_id: 1,
+  idade: -1
+})
+
+// 1º por ativo, 2º por nota média
+db.alunos.aggregate([
+  {
+    $addFields: {
+      media: { $avg: "$notas" }
+    }
+  },
+  {
+    $sort: {
+      ativo: -1,    // ativos primeiro
+      media: -1     // melhores notas primeiro
+    }
+  }
+])</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">📋 Limitação e Paginação</div>
+                <pre><code class="language-javascript">// Apenas os 5 primeiros
+db.alunos.find().limit(5)
+
+// Pular 10 e pegar os próximos 5 (página 3, tamanho 5)
+db.alunos.find().skip(10).limit(5)
+
+// Top 3 alunos por média (pipeline)
+db.alunos.aggregate([
+  {
+    $addFields: {
+      media: { $avg: "$notas" }
+    }
+  },
+  {
+    $sort: { media: -1 }
+  },
+  {
+    $limit: 3
+  },
+  {
+    $project: {
+      nome: 1,
+      media: 1,
+      _id: 0
+    }
+  }
+])</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>⚡ Dicas de Performance:</h3>
+                <ul>
+                    <li><strong>Índices:</strong> Crie índices nos campos de ordenação para speed</li>
+                    <li><strong>Limit sempre:</strong> Use limit() para evitar resultados gigantes</li>
+                    <li><strong>Pipeline otimizado:</strong> $match antes de $sort quando possível</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 7: Agregações Avançadas -->
+        <div class="slide">
+            <h2><span class="emoji">🧮</span>Agregações e Pipeline Avançado</h2>
+            
+            <div class="code-container">
+                <div class="code-title">📊 Estatísticas por Curso</div>
+                <pre><code class="language-javascript">db.alunos.aggregate([
+  // Filtrar apenas alunos ativos
+  { $match: { ativo: true } },
+  
+  // Calcular média individual
+  {
+    $addFields: {
+      media_individual: { $avg: "$notas" }
+    }
+  },
+  
+  // Agrupar por curso
+  {
+    $group: {
+      _id: "$curso_id",
+      total_alunos: { $sum: 1 },
+      idade_media: { $avg: "$idade" },
+      media_geral: { $avg: "$media_individual" },
+      melhor_nota: { $max: "$media_individual" },
+      pior_nota: { $min: "$media_individual" }
+    }
+  },
+  
+  // Adicionar dados do curso
+  {
+    $lookup: {
+      from: "cursos",
+      localField: "_id",
+      foreignField: "_id",
+      as: "curso_info"
+    }
+  },
+  
+  // Estruturar resultado final
+  {
+    $project: {
+      curso_nome: { $arrayElemAt: ["$curso_info.nome", 0] },
+      total_alunos: 1,
+      idade_media: { $round: ["$idade_media", 1] },
+      media_geral: { $round: ["$media_geral", 2] },
+      melhor_nota: { $round: ["$melhor_nota", 2] },
+      pior_nota: { $round: ["$pior_nota", 2] }
+    }
+  },
+  
+  // Ordenar por média geral
+  { $sort: { media_geral: -1 } }
+])</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">📈 Contagem e Agrupamento</div>
+                        <pre><code class="language-javascript">// Alunos por faixa etária
+db.alunos.aggregate([
+  {
+    $bucket: {
+      groupBy: "$idade",
+      boundaries: [18, 21, 25, 30],
+      default: "30+",
+      output: {
+        count: { $sum: 1 },
+        nomes: { $push: "$nome" }
+      }
+    }
+  }
+])</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">🎯 Filtros Condicionais</div>
+                        <pre><code class
