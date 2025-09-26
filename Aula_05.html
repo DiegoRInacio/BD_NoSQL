@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MongoDB - Consultas Entre Coleções</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: none;
+            height: 100vh;
+            padding: 40px 60px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 0;
+            border: none;
+            overflow-y: auto;
+            animation: slideIn 0.5s ease-out;
+            box-sizing: border-box;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #fff, #a8d8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 25px;
+            color: #4ecdc4;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            margin: 20px 0 15px;
+            color: #ffd93d;
+        }
+
+        h4 {
+            font-size: 1.4rem;
+            margin: 15px 0 10px;
+            color: #a8d8ff;
+        }
+
+        .emoji {
+            font-size: 2rem;
+        }
+
+        .code-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #4ecdc4;
+        }
+
+        .code-title {
+            color: #4ecdc4;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        pre {
+            margin: 0 !important;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .concept-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #ffd93d;
+        }
+
+        .result-box {
+            background: rgba(76, 175, 80, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #4caf50;
+        }
+
+        .explanation-box {
+            background: rgba(255, 193, 7, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+
+        .warning {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #ffb3b3;
+        }
+
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #c8e6c9;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, rgba(255, 217, 61, 0.3) 0%, rgba(255, 217, 61, 0.1) 100%);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ffd93d;
+            font-weight: bold;
+        }
+
+        ul {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.8rem;
+            }
+            
+            .slide {
+                padding: 20px 30px;
+            }
+        }
+
+        .step-indicator {
+            background: rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .performance-tip {
+            background: rgba(255, 193, 7, 0.15);
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Slide 1: Título -->
+        <div class="slide active">
+            <h1>Consultas Entre Coleções MongoDB</h1>
+            <div style="text-align: center; margin: 40px 0;">
+                <div style="font-size: 4rem; margin: 30px 0;">🔗</div>
+                <h2 style="margin-bottom: 20px;">Dominando o $lookup e Relacionamentos</h2>
+                <div style="font-size: 1.2rem; color: #a8d8ff; line-height: 1.6;">
+                    <p>Sistema Escolar • Múltiplas Coleções • Consultas Complexas</p>
+                    <p>Base: alunos → cursos → turmas → professores → contadores</p>
+                </div>
+            </div>
+            
+            <div class="concept-box">
+                <h3>🎯 Estrutura do Banco que vamos explorar:</h3>
+                <ul>
+                    <li><strong>alunos:</strong> dados pessoais, curso_id, turma_id</li>
+                    <li><strong>cursos:</strong> nome, departamento, coordenador</li>
+                    <li><strong>turmas:</strong> código, semestre, curso_id</li>
+                    <li><strong>professores:</strong> nome, departamento, email</li>
+                    <li><strong>contadores:</strong> controle de sequências</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <strong>📋 Pré-requisito:</strong> Execute primeiro o script Python gerador de dados para criar as 5 coleções com dados de exemplo.
+            </div>
+        </div>
+
+        <!-- Slide 2: Consulta Básica Cursos + Alunos -->
+        <div class="slide">
+            <h2><span class="emoji">📚</span>Consulta Básica: Cursos com Alunos</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 1.1 - Listar cursos com quantidade de alunos</div>
+                <pre><code class="language-javascript">db.cursos.aggregate([
+    {
+        $lookup: {
+            from: "alunos",
+            localField: "_id",
+            foreignField: "curso_id",
+            as: "alunos"
+        }
+    },
+    {
+        $project: {
+            departamento: "$_id",
+            total_professores: 1,
+            professores: { $slice: ["$professores", 3] },
+            total_cursos: { $size: "$cursos" },
+            total_alunos: { $size: "$alunos" },
+            alunos_ativos: {
+                $size: {
+                    $filter: {
+                        input: "$alunos",
+                        cond: { $eq: ["$this.ativo", true] }
+                    }
+                }
+            },
+            bolsistas: {
+                $size: {
+                    $filter: {
+                        input: "$alunos",
+                        cond: { $eq: ["$this.bolsista", true] }
+                    }
+                }
+            }
+        }
+    },
+    { $sort: { total_alunos: -1 } }
+])_matriculados"
+        }
+    },
+    {
+        $project: {
+            nome: 1,
+            departamento: 1,
+            total_alunos: { $size: "$alunos_matriculados" },
+            alunos_ativos: {
+                $size: {
+                    $filter: {
+                        input: "$alunos_matriculados",
+                        cond: { $eq: ["$$this.ativo", true] }
+                    }
+                }
+            }
+        }
+    },
+                { $sort: { total_alunos: -1 } }
+])</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Dashboard Executivo:</h4>
+                <pre><code class="language-json">[
+  {
+    "_id": null,
+    "departamento": "Engenharia",
+    "total_professores": 12,
+    "professores": ["Lucas Costa", "Paulo Lima", "Sérgio Melo"],
+    "total_cursos": 8,
+    "total_alunos": 65,
+    "alunos_ativos": 58,
+    "bolsistas": 23
+  },
+  {
+    "_id": null,
+    "departamento": "Medicina",
+    "total_professores": 8,
+    "professores": ["Mariana Lima", "Renata Costa", "Tatiana Ribeiro"],
+    "total_cursos": 3,
+    "total_alunos": 42,
+    "alunos_ativos": 40,
+    "bolsistas": 15
+  }
+]</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>📈 Análise Estratégica dos Dados:</h4>
+                <ul>
+                    <li><strong>Engenharia:</strong> Maior volume (65 alunos, 12 professores) - Ratio: 5.4 alunos/professor</li>
+                    <li><strong>Medicina:</strong> Mais eficiente (42 alunos, 8 professores) - Ratio: 5.25 alunos/professor</li>
+                    <li><strong>Taxa de bolsas:</strong> Engenharia 35%, Medicina 36% - Bem equilibrado</li>
+                    <li><strong>Retenção:</strong> Medicina 95% vs Engenharia 89% - Medicina retém melhor</li>
+                    <li><strong>Diversidade:</strong> Engenharia tem mais cursos (8 vs 3) - Maior variedade</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 9: Análise por Cidade e Departamento -->
+        <div class="slide">
+            <h2><span class="emoji">🌍</span>Análise Geográfica: Alunos por Cidade</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 5.2 - Distribuição por cidade e departamento</div>
+                <pre><code class="language-javascript">db.alunos.aggregate([
+    {
+        $lookup: {
+            from: "cursos",
+            localField: "curso_id",
+            foreignField: "_id",
+            as: "curso"
+        }
+    },
+    {
+        $lookup: {
+            from: "turmas",
+            localField: "curso_id",
+            foreignField: "curso_id",
+            as: "turmas_disponiveis"
+        }
+    },
+    {
+        $unwind: "$curso"
+    },
+    {
+        $group: {
+            _id: {
+                cidade: "$endereco.cidade",
+                departamento: "$curso.departamento"
+            },
+            total_alunos: { $sum: 1 },
+            alunos_ativos: {
+                $sum: { $cond: [{ $eq: ["$ativo", true] }, 1, 0] }
+            },
+            bolsistas: {
+                $sum: { $cond: [{ $eq: ["$bolsista", true] }, 1, 0] }
+            },
+            turmas_disponiveis: { $first: { $size: "$turmas_disponiveis" } },
+            sample_alunos: { $push: { nome: "$nome", email: "$email" } }
+        }
+    },
+    {
+        $project: {
+            cidade: "$_id.cidade",
+            departamento: "$_id.departamento",
+            total_alunos: 1,
+            alunos_ativos: 1,
+            bolsistas: 1,
+            turmas_disponiveis: 1,
+            sample_alunos: { $slice: ["$sample_alunos", 2] }
+        }
+    },
+    { $sort: { total_alunos: -1 } },
+    { $limit: 15 }
+])</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Distribuição Geográfica:</h4>
+                <pre><code class="language-json">[
+  {
+    "_id": {...},
+    "cidade": "Rio de Janeiro",
+    "departamento": "Engenharia",
+    "total_alunos": 18,
+    "alunos_ativos": 16,
+    "bolsistas": 7,
+    "turmas_disponiveis": 3,
+    "sample_alunos": [
+      {"nome": "Ana Silva", "email": "ana.silva@exemplo.com"},
+      {"nome": "Carlos Lima", "email": "carlos.lima@exemplo.com"}
+    ]
+  },
+  {
+    "_id": {...},
+    "cidade": "São Paulo", 
+    "departamento": "Medicina",
+    "total_alunos": 15,
+    "alunos_ativos": 14,
+    "bolsistas": 6,
+    "turmas_disponiveis": 2
+  }
+]</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>🎯 Insights Regionais:</h4>
+                <ul>
+                    <li><strong>Rio concentra Engenharia:</strong> 18 alunos, 89% ativos, 39% bolsistas</li>
+                    <li><strong>São Paulo forte em Medicina:</strong> 15 alunos, 93% ativos, 40% bolsistas</li>
+                    <li><strong>Oportunidades por cidade:</strong> Rio tem mais turmas de Engenharia (3 vs 2)</li>
+                    <li><strong>Sample de alunos:</strong> Facilita contato direto com representantes regionais</li>
+                </ul>
+            </div>
+
+            <div class="concept-box">
+                <h4>📍 Aplicações Práticas:</h4>
+                <ul>
+                    <li><strong>Marketing regional:</strong> Focar campanhas por cidade/departamento</li>
+                    <li><strong>Abertura de turmas:</strong> Demanda regional identificada</li>
+                    <li><strong>Políticas de bolsa:</strong> Ajustar por região conforme necessidade</li>
+                    <li><strong>Logística:</strong> Planejamento de infraestrutura por cidade</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 10: Performance e Índices -->
+        <div class="slide">
+            <h2><span class="emoji">⚡</span>Performance e Otimização</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 6.1 - Verificar uso de índices</div>
+                <pre><code class="language-javascript">// Analisar performance de consulta comum
+db.alunos.find({"curso_id": 1, "ativo": true}).explain("executionStats")</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Resultado do Explain:</h4>
+                <pre><code class="language-json">{
+  "executionStats": {
+    "totalExamined": 2,       // ✅ Apenas 2 docs examinados
+    "totalDocsReturned": 2,   // ✅ 2 docs retornados
+    "executionTimeMillis": 1, // ✅ Muito rápido (1ms)
+    "indexesUsed": ["curso_id_1_ativo_1"], // ✅ Usou índice
+    "stage": "IXSCAN"         // ✅ Index Scan (não Collection Scan)
+  }
+}</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🔍 6.2 - Verificar índices existentes</div>
+                <pre><code class="language-javascript">// Ver todos os índices de cada coleção
+db.alunos.getIndexes()
+db.cursos.getIndexes() 
+db.professores.getIndexes()
+db.turmas.getIndexes()</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Índices Criados pelo Script:</h4>
+                <pre><code class="language-json">[
+  {"name": "_id_", "key": {"_id": 1}},           // Padrão
+  {"name": "nome_1", "key": {"nome": 1}},        // Busca por nome
+  {"name": "email_1", "key": {"email": 1}},      // Login único
+  {"name": "cpf_1", "key": {"cpf": 1}},          // CPF único  
+  {"name": "curso_id_1_ativo_1", "key": {"curso_id": 1, "ativo": 1}}, // Consulta comum
+  {"name": "data_matricula_-1", "key": {"data_matricula": -1}}, // Ordem cronológica
+  {"name": "nome_text", "key": {"_fts": "text"}} // Busca textual
+]</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>💡 Por que estes índices são essenciais:</h4>
+                <ul>
+                    <li><strong>nome_1:</strong> Busca de alunos por nome (muito comum)</li>
+                    <li><strong>email_1 (unique):</strong> Login, evita duplicação</li>
+                    <li><strong>curso_id_1_ativo_1:</strong> Consulta mais frequente do sistema</li>
+                    <li><strong>data_matricula_-1:</strong> Relatórios cronológicos</li>
+                    <li><strong>nome_text:</strong> Busca textual avançada</li>
+                </ul>
+            </div>
+
+            <div class="performance-tip">
+                <strong>⚡ Dica:</strong> O índice composto (curso_id, ativo) é perfeito para nossas consultas $lookup que filtram por curso e status ativo.
+            </div>
+        </div>
+
+        <!-- Slide 11: Comandos Úteis -->
+        <div class="slide">
+            <h2><span class="emoji">🛠️</span>Comandos Úteis para Análise</h2>
+            
+            <div class="two-column">
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">📊 Estatísticas das Coleções</div>
+                        <pre><code class="language-javascript">// Tamanho e estatísticas
+db.runCommand({collStats: "alunos"})
+db.runCommand({collStats: "cursos"}) 
+db.runCommand({collStats: "professores"})</code></pre>
+                    </div>
+
+                    <div class="code-container">
+                        <div class="code-title">🔍 Análise de Índices</div>
+                        <pre><code class="language-javascript">// Estatísticas de uso dos índices
+db.alunos.aggregate([
+  { $indexStats: {} }
+])
+
+// Forçar uso de índice específico
+db.alunos.find({ nome: "João" })
+  .hint({ nome: 1 })</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-container">
+                        <div class="code-title">📈 Contadores Rápidos</div>
+                        <pre><code class="language-javascript">// Contar documentos por coleção
+db.alunos.countDocuments()
+db.cursos.countDocuments()
+db.turmas.countDocuments()
+
+// Contar com filtro
+db.alunos.countDocuments({ ativo: true })
+db.alunos.countDocuments({ bolsista: true })</code></pre>
+                    </div>
+
+                    <div class="code-container">
+                        <div class="code-title">🎯 Consultas Rápidas</div>
+                        <pre><code class="language-javascript">// Campos únicos em uma coleção
+db.alunos.distinct("endereco.cidade")
+db.cursos.distinct("departamento")
+
+// Sample aleatório
+db.alunos.aggregate([
+  { $sample: { size: 5 } }
+])</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box">
+                <h4>🎯 Quando usar cada comando:</h4>
+                <ul>
+                    <li><strong>collStats:</strong> Verificar tamanho, índices, fragmentação</li>
+                    <li><strong>indexStats:</strong> Ver quais índices são mais usados</li>
+                    <li><strong>countDocuments:</strong> Contagens rápidas com filtros</li>
+                    <li><strong>distinct:</strong> Valores únicos para filtros/dropdowns</li>
+                    <li><strong>$sample:</strong> Dados de teste ou preview</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 12: Dicas e Boas Práticas -->
+        <div class="slide">
+            <h2><span class="emoji">💡</span>Dicas e Boas Práticas</h2>
+            
+            <div class="concept-box">
+                <h3>🎯 Estratégias para $lookup Eficiente:</h3>
+                <ul>
+                    <li><strong>Índices nos campos de JOIN:</strong> Sempre crie índices nos campos localField e foreignField</li>
+                    <li><strong>$match primeiro:</strong> Filtre antes do $lookup para reduzir documentos processados</li>
+                    <li><strong>$project essencial:</strong> Selecione apenas campos necessários</li>
+                    <li><strong>preserveNullAndEmptyArrays:</strong> Use com cuidado, pode impactar performance</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <h4>⚠️ Armadilhas Comuns:</h4>
+                <ul>
+                    <li><strong>$lookup sem índice:</strong> Pode ser muito lento em coleções grandes</li>
+                    <li><strong>Múltiplos $unwind:</strong> Evite unwinding desnecessário</li>
+                    <li><strong>$group tarde demais:</strong> Agrupe depois de filtrar</li>
+                    <li><strong>Projeção tardia:</strong> Remova campos desnecessários cedo</li>
+                </ul>
+            </div>
+
+            <div class="success">
+                <h4>✅ Pipeline Otimizado:</h4>
+                <ol>
+                    <li><strong>$match:</strong> Filtros iniciais</li>
+                    <li><strong>$lookup:</strong> JOIN necessários</li>
+                    <li><strong>$unwind:</strong> Apenas se necessário</li>
+                    <li><strong>$group:</strong> Agregações</li>
+                    <li><strong>$project:</strong> Campos finais</li>
+                    <li><strong>$sort + $limit:</strong> Ordenação e paginação</li>
+                </ol>
+            </div>
+
+            <div class="performance-tip">
+                <strong>🚀 Performance Tips:</strong>
+                <ul>
+                    <li>Use <code>.explain("executionStats")</code> para analisar consultas</li>
+                    <li>Crie índices compostos para consultas frequentes</li>
+                    <li>Monitore com <code>db.currentOp()</code> operações lentas</li>
+                    <li>Use <code>$facet</code> para múltiplas agregações paralelas</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 13: Exercícios Práticos -->
+        <div class="slide">
+            <h2><span class="emoji">📝</span>Exercícios Práticos</h2>
+            
+            <div class="concept-box">
+                <h3>🎯 Desafios para Praticar:</h3>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🥉 Nível Básico</div>
+                <pre><code class="language-javascript">// 1. Liste todos os cursos de Engenharia com seus alunos ativos
+// 2. Encontre o departamento com mais professores
+// 3. Mostre as 5 turmas com mais alunos
+// 4. Conte quantos alunos cada cidade tem</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🥈 Nível Intermediário</div>
+                <pre><code class="language-javascript">// 5. Crie um ranking de cursos por taxa de retenção (% alunos ativos)
+// 6. Encontre alunos que são bolsistas em cursos de Medicina
+// 7. Liste professores que têm alunos de múltiplas cidades
+// 8. Calcule a média de alunos por professor em cada departamento</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🥇 Nível Avançado</div>
+                <pre><code class="language-javascript">// 9. Crie um relatório de "alunos em risco" (inativos com bolsa)
+// 10. Monte um dashboard com: total alunos, % bolsistas, distribuição por semestre
+// 11. Encontre "cursos órfãos" (sem turmas) e "turmas vazias" (sem alunos)
+// 12. Calcule ROI por departamento: (alunos_ativos / professores * cursos)</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>💡 Como abordar os exercícios:</h4>
+                <ul>
+                    <li><strong>Comece simples:</strong> Teste cada $lookup separadamente</li>
+                    <li><strong>Use .limit(5):</strong> Evite resultados gigantes durante testes</li>
+                    <li><strong>Verifique performance:</strong> Use .explain() em consultas complexas</li>
+                    <li><strong>Documente:</strong> Comente o que cada estágio do pipeline faz</li>
+                </ul>
+            </div>
+
+            <div class="performance-tip">
+                <strong>🎓 Dica de Estudos:</strong> Resolva 1-2 exercícios por dia. A prática consistente é melhor que maratonas.
+            </div>
+        </div>
+
+        <!-- Slide 14: Resumo e Próximos Passos -->
+        <div class="slide">
+            <h2><span class="emoji">🎓</span>Resumo e Próximos Passos</h2>
+            
+            <div class="concept-box">
+                <h3>✅ O que você domina agora:</h3>
+                <div class="two-column">
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">🔗 Relacionamentos</h4>
+                        <ul>
+                            <li>✅ $lookup básico entre 2 coleções</li>
+                            <li>✅ $lookup complexo com pipeline</li>
+                            <li>✅ Múltiplos joins (3+ coleções)</li>
+                            <li>✅ Relacionamentos indiretos via campos comuns</li>
+                        </ul>
+
+                        <h4 style="color: #4ecdc4; margin: 20px 0 15px;">📊 Análises</h4>
+                        <ul>
+                            <li>✅ Estatísticas por departamento</li>
+                            <li>✅ Distribuição geográfica</li>
+                            <li>✅ Rankings e comparações</li>
+                            <li>✅ Dashboards executivos</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #4ecdc4; margin-bottom: 15px;">⚡ Performance</h4>
+                        <ul>
+                            <li>✅ Uso de índices para $lookup</li>
+                            <li>✅ Análise com explain()</li>
+                            <li>✅ Pipeline otimizado</li>
+                            <li>✅ Monitoramento de consultas</li>
+                        </ul>
+
+                        <h4 style="color: #4ecdc4; margin: 20px 0 15px;">🛠️ Ferramentas</h4>
+                        <ul>
+                            <li>✅ mongosh para consultas</li>
+                            <li>✅ Comandos de análise</li>
+                            <li>✅ Estatísticas de coleções</li>
+                            <li>✅ Debugging de performance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box" style="margin-top: 30px;">
+                <h3>🚀 Próximos Níveis MongoDB:</h3>
+                <ul>
+                    <li><strong>🔄 Change Streams:</strong> Monitorar mudanças em tempo real</li>
+                    <li><strong>📊 Aggregation Framework Avançado:</strong> $facet, $graphLookup, $merge</li>
+                    <li><strong>🌐 Sharding:</strong> Distribuição horizontal para big data</li>
+                    <li><strong>🔒 Transações:</strong> ACID compliance para operações críticas</li>
+                    <li><strong>☁️ MongoDB Atlas:</strong> Cloud, search, analytics</li>
+                    <li><strong>🐍 Integração avançada:</strong> PyMongo async, FastAPI, frameworks</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px; font-size: 1.2rem;">
+                <p style="color: #4ecdc4;">🎉 <strong>Parabéns!</strong> Você domina consultas entre coleções no MongoDB!</p>
+                <p style="margin-top: 15px; color: #a8d8ff;">Continue praticando com dados reais para fixar o conhecimento</p>
+                <div style="margin-top: 25px; font-size: 2rem;">🚀📊🔗💎</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação -->
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo →</button>
+    </div>
+
+    <!-- Contador de slides -->
+    <div class="slide-counter">
+        <span id="slideCounter">1 / 14</span>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            // Remove active class from all slides
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // Normalize slide index
+            if (n >= totalSlides) currentSlide = 0;
+            if (n < 0) currentSlide = totalSlides - 1;
+            
+            // Show current slide
+            slides[currentSlide].classList.add('active');
+            
+            // Update counter
+            document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (event.key === 'ArrowRight') {
+                changeSlide(1);
+            } else if (event.key === 'Home') {
+                currentSlide = 0;
+                showSlide(currentSlide);
+            } else if (event.key === 'End') {
+                currentSlide = totalSlides - 1;
+                showSlide(currentSlide);
+            }
+        });
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
+
+            <div class="result-box">
+                <h4>📊 Resultado Esperado:</h4>
+                <pre><code class="language-json">[
+  {
+    "_id": 1,
+    "nome": "Curso 1",
+    "departamento": "Engenharia",
+    "total_alunos": 15,
+    "alunos_ativos": 12
+  },
+  {
+    "_id": 2,
+    "nome": "Curso 2", 
+    "departamento": "Medicina",
+    "total_alunos": 8,
+    "alunos_ativos": 7
+  }
+]</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>💡 Explicação Detalhada:</h4>
+                <ul>
+                    <li><span class="step-indicator">PASSO 1</span><strong>$lookup:</strong> Faz o "JOIN" entre cursos e alunos usando _id = curso_id</li>
+                    <li><span class="step-indicator">PASSO 2</span><strong>$size:</strong> Conta quantos elementos há no array "alunos_matriculados"</li>
+                    <li><span class="step-indicator">PASSO 3</span><strong>$filter:</strong> Filtra apenas alunos ativos dentro do array</li>
+                    <li><span class="step-indicator">PASSO 4</span><strong>$sort:</strong> Ordena por total de alunos (maior primeiro)</li>
+                </ul>
+            </div>
+
+            <div class="performance-tip">
+                <strong>⚡ Dica de Performance:</strong> Esta consulta será mais rápida se houver índice em "curso_id" na coleção alunos: <code>db.alunos.createIndex({"curso_id": 1})</code>
+            </div>
+        </div>
+
+        <!-- Slide 3: Consulta Reversa Alunos + Cursos -->
+        <div class="slide">
+            <h2><span class="emoji">👥</span>Consulta Reversa: Alunos com Informações do Curso</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 1.2 - Alunos com dados completos do curso</div>
+                <pre><code class="language-javascript">db.alunos.aggregate([
+    {
+        $lookup: {
+            from: "cursos",
+            localField: "curso_id",
+            foreignField: "_id",
+            as: "curso_info"
+        }
+    },
+    {
+        $unwind: "$curso_info"
+    },
+    {
+        $project: {
+            nome: 1,
+            email: 1,
+            ativo: 1,
+            "curso_info.nome": 1,
+            "curso_info.departamento": 1
+        }
+    },
+    { $match: { ativo: true } },
+    { $limit: 10 }
+])</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Resultado Esperado:</h4>
+                <pre><code class="language-json">[
+  {
+    "_id": 1,
+    "nome": "Ana Silva",
+    "email": "ana.silva@exemplo.com",
+    "ativo": true,
+    "curso_info": {
+      "nome": "Curso 1",
+      "departamento": "Engenharia"
+    }
+  },
+  {
+    "_id": 2,
+    "nome": "Bruno Santos",
+    "email": "bruno.santos@exemplo.com", 
+    "ativo": true,
+    "curso_info": {
+      "nome": "Curso 2",
+      "departamento": "Medicina"
+    }
+  }
+]</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>💡 Por que usar $unwind?</h4>
+                <p><strong>Sem $unwind:</strong> curso_info seria um array [{}], mesmo com apenas 1 elemento</p>
+                <p><strong>Com $unwind:</strong> curso_info vira um objeto {} diretamente</p>
+                <p><strong>Vantagem:</strong> Facilita acesso aos campos: curso_info.nome em vez de curso_info[0].nome</p>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Cuidado:</strong> $unwind remove documentos onde curso_info está vazio. Use preserveNullAndEmptyArrays: true se quiser manter alunos sem curso.
+            </div>
+        </div>
+
+        <!-- Slide 4: Ranking de Departamentos -->
+        <div class="slide">
+            <h2><span class="emoji">🏆</span>Análise Avançada: Ranking de Departamentos</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 1.3 - Departamentos por número de alunos</div>
+                <pre><code class="language-javascript">db.cursos.aggregate([
+    {
+        $lookup: {
+            from: "alunos",
+            localField: "_id",
+            foreignField: "curso_id",
+            as: "alunos"
+        }
+    },
+    {
+        $group: {
+            _id: "$departamento",
+            total_alunos: { $sum: { $size: "$alunos" } },
+            total_cursos: { $sum: 1 },
+            alunos_ativos: {
+                $sum: {
+                    $size: {
+                        $filter: {
+                            input: "$alunos",
+                            cond: { $eq: ["$$this.ativo", true] }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    { $sort: { total_alunos: -1 } }
+])</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Resultado Típico:</h4>
+                <pre><code class="language-json">[
+  {
+    "_id": "Engenharia",
+    "total_alunos": 65,
+    "total_cursos": 8,
+    "alunos_ativos": 58
+  },
+  {
+    "_id": "Medicina", 
+    "total_alunos": 42,
+    "total_cursos": 3,
+    "alunos_ativos": 40
+  },
+  {
+    "_id": "Administração",
+    "total_alunos": 38,
+    "total_cursos": 5,
+    "alunos_ativos": 33
+  }
+]</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>💡 Análise dos Resultados:</h4>
+                <ul>
+                    <li><strong>Engenharia lidera:</strong> 65 alunos em 8 cursos (média: 8.1 alunos/curso)</li>
+                    <li><strong>Medicina é concentrada:</strong> 42 alunos em apenas 3 cursos (média: 14 alunos/curso)</li>
+                    <li><strong>Taxa de atividade:</strong> Engenharia 89%, Medicina 95%, Administração 87%</li>
+                    <li><strong>Insight:</strong> Medicina tem maior retenção de alunos (95% ativos)</li>
+                </ul>
+            </div>
+
+            <div class="concept-box">
+                <h4>🧮 Como funciona o $group:</h4>
+                <p><strong>_id:</strong> Campo para agrupar (departamento)</p>
+                <p><strong>$sum:</strong> Soma valores ou conta documentos</p>
+                <p><strong>$size:</strong> Conta elementos do array</p>
+                <p><strong>Resultado:</strong> Um documento por departamento único</p>
+            </div>
+        </div>
+
+        <!-- Slide 5: Contadores + Cursos -->
+        <div class="slide">
+            <h2><span class="emoji">🔢</span>Sistema de Contadores</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 2.1 - Ver contadores disponíveis</div>
+                <pre><code class="language-javascript">db.contadores.find().pretty()</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Resultado dos Contadores:</h4>
+                <pre><code class="language-json">[
+  {
+    "_id": "matriculas",
+    "valor": 2024156,
+    "descricao": "Contador para números de matrícula"
+  },
+  {
+    "_id": "turmas", 
+    "valor": 342,
+    "descricao": "Contador para códigos de turma"
+  },
+  {
+    "_id": "professores",
+    "valor": 1847,
+    "descricao": "Contador para IDs de professores"
+  }
+]</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🔍 2.2 - Simular nova matrícula (incrementar contador)</div>
+                <pre><code class="language-javascript">db.contadores.findOneAndUpdate(
+    { _id: "matriculas" },
+    { $inc: { valor: 1 } },
+    { returnNewDocument: true }
+)</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Resultado da Atualização:</h4>
+                <pre><code class="language-json">{
+  "_id": "matriculas",
+  "valor": 2024157,  // incrementou +1
+  "descricao": "Contador para números de matrícula"
+}</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>💡 Por que usar contadores?</h4>
+                <ul>
+                    <li><strong>Matrículas sequenciais:</strong> 2024001, 2024002, 2024003...</li>
+                    <li><strong>Operação atômica:</strong> $inc garante que não há duplicação</li>
+                    <li><strong>Performance:</strong> Mais rápido que buscar MAX()</li>
+                    <li><strong>Controle:</strong> Diferentes sequências para diferentes entidades</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 6: Professores + Alunos -->
+        <div class="slide">
+            <h2><span class="emoji">👨‍🏫</span>Professores e Alunos por Departamento</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 3.1 - Professores com alunos do mesmo departamento</div>
+                <pre><code class="language-javascript">db.professores.aggregate([
+    {
+        $lookup: {
+            from: "cursos",
+            localField: "departamento",
+            foreignField: "departamento",
+            as: "cursos_departamento"
+        }
+    },
+    {
+        $lookup: {
+            from: "alunos",
+            let: { cursos_ids: "$cursos_departamento._id" },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: { $in: ["$curso_id", "$$cursos_ids"] }
+                    }
+                }
+            ],
+            as: "alunos_departamento"
+        }
+    },
+    {
+        $project: {
+            nome: 1,
+            departamento: 1,
+            total_cursos: { $size: "$cursos_departamento" },
+            total_alunos: { $size: "$alunos_departamento" },
+            alunos_ativos: {
+                $size: {
+                    $filter: {
+                        input: "$alunos_departamento",
+                        cond: { $eq: ["$$this.ativo", true] }
+                    }
+                }
+            }
+        }
+    },
+    { $sort: { total_alunos: -1 } }
+])</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Resultado Típico:</h4>
+                <pre><code class="language-json">[
+  {
+    "_id": 1,
+    "nome": "Lucas Costa",
+    "departamento": "Engenharia", 
+    "total_cursos": 8,
+    "total_alunos": 65,
+    "alunos_ativos": 58
+  },
+  {
+    "_id": 2,
+    "nome": "Mariana Lima",
+    "departamento": "Medicina",
+    "total_cursos": 3, 
+    "total_alunos": 42,
+    "alunos_ativos": 40
+  }
+]</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>💡 Lookup Complexo Explicado:</h4>
+                <ul>
+                    <li><span class="step-indicator">PASSO 1</span><strong>Primeiro $lookup:</strong> Busca todos os cursos do departamento do professor</li>
+                    <li><span class="step-indicator">PASSO 2</span><strong>$let:</strong> Cria variável com IDs dos cursos encontrados</li>
+                    <li><span class="step-indicator">PASSO 3</span><strong>Pipeline $lookup:</strong> Busca alunos cujo curso_id está na lista</li>
+                    <li><span class="step-indicator">PASSO 4</span><strong>$in:</strong> Verifica se curso_id está no array de IDs</li>
+                </ul>
+            </div>
+
+            <div class="concept-box">
+                <h4>🔄 Relação Indireta:</h4>
+                <p><strong>Professores</strong> ↔ <strong>Departamento</strong> ↔ <strong>Cursos</strong> ↔ <strong>Alunos</strong></p>
+                <p>Não há ligação direta professor-aluno, então usamos o departamento como ponte.</p>
+            </div>
+        </div>
+
+        <!-- Slide 7: Consulta Tripla (Turmas + Cursos + Alunos) -->
+        <div class="slide">
+            <h2><span class="emoji">🎓</span>Consulta Tripla: Turmas + Cursos + Alunos</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 4.1 - Análise completa de turmas</div>
+                <pre><code class="language-javascript">db.turmas.aggregate([
+    {
+        $lookup: {
+            from: "cursos",
+            localField: "curso_id",
+            foreignField: "_id",
+            as: "curso"
+        }
+    },
+    {
+        $lookup: {
+            from: "alunos",
+            localField: "curso_id",
+            foreignField: "curso_id",
+            as: "alunos_curso"
+        }
+    },
+    {
+        $unwind: "$curso"
+    },
+    {
+        $project: {
+            codigo: 1,
+            semestre: 1,
+            "curso.nome": 1,
+            "curso.departamento": 1,
+            total_alunos_curso: { $size: "$alunos_curso" },
+            alunos_ativos: {
+                $size: {
+                    $filter: {
+                        input: "$alunos_curso",
+                        cond: { $eq: ["$$this.ativo", true] }
+                    }
+                }
+            }
+        }
+    },
+    { $sort: { semestre: -1, total_alunos_curso: -1 } }
+])</code></pre>
+            </div>
+
+            <div class="result-box">
+                <h4>📊 Resultado da Análise:</h4>
+                <pre><code class="language-json">[
+  {
+    "_id": 1,
+    "codigo": "T1015",
+    "semestre": "2025_1",
+    "curso": {
+      "nome": "Curso 15",
+      "departamento": "Engenharia"
+    },
+    "total_alunos_curso": 18,
+    "alunos_ativos": 16
+  },
+  {
+    "_id": 2, 
+    "codigo": "T1032",
+    "semestre": "2024_2",
+    "curso": {
+      "nome": "Curso 8",
+      "departamento": "Medicina"
+    },
+    "total_alunos_curso": 12,
+    "alunos_ativos": 11
+  }
+]</code></pre>
+            </div>
+
+            <div class="explanation-box">
+                <h4>💡 Insights da Análise:</h4>
+                <ul>
+                    <li><strong>Semestres mais recentes primeiro:</strong> 2025_1 aparece antes de 2024_2</li>
+                    <li><strong>Dentro do mesmo semestre:</strong> Ordenação por número de alunos</li>
+                    <li><strong>Taxa de atividade por turma:</strong> T1015 = 89%, T1032 = 92%</li>
+                    <li><strong>Departamento Engenharia:</strong> Turmas maiores (18 alunos)</li>
+                    <li><strong>Departamento Medicina:</strong> Melhor retenção (92% ativos)</li>
+                </ul>
+            </div>
+
+            <div class="performance-tip">
+                <strong>⚡ Otimização:</strong> Esta consulta se beneficia de índices compostos: <code>db.turmas.createIndex({"curso_id": 1, "semestre": -1})</code>
+            </div>
+        </div>
+
+        <!-- Slide 8: Relatório Executivo Completo -->
+        <div class="slide">
+            <h2><span class="emoji">📊</span>Relatório Executivo: Visão 360°</h2>
+            
+            <div class="code-container">
+                <div class="code-title">🔍 5.1 - Dashboard completo por departamento</div>
+                <pre><code class="language-javascript">db.professores.aggregate([
+    {
+        $group: {
+            _id: "$departamento",
+            professores: { $push: "$nome" },
+            total_professores: { $sum: 1 }
+        }
+    },
+    {
+        $lookup: {
+            from: "cursos",
+            localField: "_id", 
+            foreignField: "departamento",
+            as: "cursos"
+        }
+    },
+    {
+        $lookup: {
+            from: "alunos",
+            let: { cursos_ids: "$cursos._id" },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: { $in: ["$curso_id", "$$cursos_ids"] }
+                    }
+                }
+            ],
+            as: "alunos"
+
+            
