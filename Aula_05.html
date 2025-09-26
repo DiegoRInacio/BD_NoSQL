@@ -529,13 +529,13 @@ db.alunos.find({"curso_id": 1, "ativo": true}).explain("executionStats")</code><
             <div class="result-box">
                 <h4>📊 Resultado do Explain:</h4>
                 <pre><code class="language-json">{
-  "executionStats": {
-    "totalExamined": 2,       // ✅ Apenas 2 docs examinados
-    "totalDocsReturned": 2,   // ✅ 2 docs retornados
-    "executionTimeMillis": 1, // ✅ Muito rápido (1ms)
-    "indexesUsed": ["curso_id_1_ativo_1"], // ✅ Usou índice
-    "stage": "IXSCAN"         // ✅ Index Scan (não Collection Scan)
-  }
+  "stage": "IXSCAN",            // ✅ Index Scan (não Collection Scan!)
+  "indexName": "curso_id_1_ativo_1",
+  "totalDocsExamined": 4,       // ✅ Apenas 4 docs examinados
+  "totalKeysExamined": 4,       // ✅ 4 chaves de índice usadas
+  "nReturned": 4,               // ✅ 4 retornados
+  "executionTimeMillis": 18
+}
 }</code></pre>
             </div>
 
