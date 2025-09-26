@@ -515,6 +515,16 @@
                 <pre><code class="language-javascript">// Analisar performance de consulta comum
 db.alunos.find({"curso_id": 1, "ativo": true}).explain("executionStats")</code></pre>
             </div>
+            
+            
+            <div class="code-container">
+                <div class="code-title">🔍 6.2 - Verificar uso de índices</div>
+                <pre><code class="language-javascript">// Criar o índice composto que falta
+db.alunos.createIndex({"curso_id": 1, "ativo": 1})
+
+                    // Analisar performance de consulta comum
+db.alunos.find({"curso_id": 1, "ativo": true}).explain("executionStats")</code></pre>
+            </div>
 
             <div class="result-box">
                 <h4>📊 Resultado do Explain:</h4>
@@ -530,7 +540,7 @@ db.alunos.find({"curso_id": 1, "ativo": true}).explain("executionStats")</code><
             </div>
 
             <div class="code-container">
-                <div class="code-title">🔍 6.2 - Verificar índices existentes</div>
+                <div class="code-title">🔍 6.3 - Verificar índices existentes</div>
                 <pre><code class="language-javascript">// Ver todos os índices de cada coleção
 db.alunos.getIndexes()
 db.cursos.getIndexes() 
