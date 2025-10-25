@@ -255,6 +255,23 @@ db.alunos.aggregate([
 
 ---
 
+## 🧩 Exercício de apoio para estudos
+
+Crie **três novas consultas** explorando o banco `sistema_escolar` com base nos conceitos de *lookup*, *group*, *match* e *project*. Algumas ideias possíveis:
+
+1. **Contar o número de bolsistas por departamento.**  
+   Dica: relacione `alunos` e `cursos` e agrupe por `curso.departamento`.
+
+2. **Listar professores que lecionam em mais de um curso.**  
+   Dica: use `$lookup` entre `professores` e `cursos` com base no `departamento` e conte as ocorrências.
+
+3. **Descobrir as cidades com mais alunos ativos.**  
+   Dica: filtre `ativo: true` e agrupe por `endereco.cidade` ordenando em ordem decrescente.
+
+Esses exercícios reforçam a aplicação de joins, filtros e agregações aninhadas, consolidando o domínio sobre o uso do framework de agregação do MongoDB.
+
+---
+
 **Autor:** Professor Diego Ramos Inácio  
 **Disciplina:** Banco de Dados Não Relacional (MongoDB)  
 **Universidade de Vassouras – Campus Saquarema**
