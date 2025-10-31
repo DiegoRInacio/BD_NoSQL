@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consultas MongoDB – Exercícios Aula 05</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      margin: 2rem auto;
+      padding: 2rem;
+      max-width: 900px;
+      line-height: 1.6;
+    }
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    pre {
+      background: #1e1e1e;
+      color: #e8e8e8;
+      padding: 1rem;
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+    code {
+      color: #2ecc71;
+    }
+    .footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #ccc;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 Gabarito de Consultas MongoDB – Aula 05</h1>
+  <p><strong>Banco:</strong> sistema_escolar</p>
+  <p><strong>Coleções:</strong> alunos, cursos, turmas, professores</p>
+  <p>Objetivo: Fixar <code>$lookup</code>, agregações e KPIs com desafios graduais.</p>
+  
+  <h2>🟢 Básico</h2>
+
+  <h3>1️⃣ Cursos de Engenharia com alunos ativos</h3>
+  <pre><code>db.alunos.aggregate([
+  { $lookup: { from: "cursos", localField: "curso_id", foreignField: "_id", as: "curso" } },
+  { $unwind: "$curso" },
+  { $match: { "curso.departamento": /engenharia/i, ativo: true } },
+  { $group: { _id: "$curso.nome", total_ativos: { $sum: 1 } } },
+  { $sort: { total_ativos: -1 } }
+]);</code></pre>
+
+  <h3>2️⃣ Departamento com mais professores</h3>
+  <pre><code>db.professores.aggregate([
+  { $group: { _id: "$departamento", total_professores: { $sum: 1 } } },
+  { $sort: { total_professores: -1 } },
+  { $limit: 1 }
+]);</code></pre>
+
+  <h3>3️⃣ Top-5 turmas por número de alunos</h3>
+  <pre><code>db.alunos.aggregate([
+  { $lookup: { from: "turmas", localField: "curso_id", foreignField: "curso_id", as: "turma" } },
+  { $unwind: "$turma" },
+  { $group: { _id: "$turma.codigo", total_alunos: { $sum: 1 } } },
+  { $sort: { total_alunos: -1 } },
+  { $limit: 5 }
+]);</code></pre>
+
+  <h3>4️⃣ Cidades únicas com count</h3>
+  <pre><code>db.alunos.aggregate([
+  { $group: { _id: "$endereco.cidade", total: { $sum: 1 } } },
+  { $sort: { total: -1 } }
+]);</code></pre>
+
+  <h2>🔵 Intermediário / Avançado</h2>
+
+  <h3>5️⃣ Ranking por retenção (ativos / total)</h3>
+  <pre><code>db.alunos.aggregate([
+  { $lookup: { from: "cursos", localField: "curso_id", foreignField: "_id", as: "curso" } },
+  { $unwind: "$curso" },
+  { $group: { _id: "$curso.nome", total_alunos: { $sum: 1 }, ativos: { $sum: { $cond: ["$ativo", 1, 0] } } } },
+  { $project: { _id: 1, total_alunos: 1, ativos: 1, taxa_retencao: { $cond: [ { $eq: ["$total_alunos", 0] }, 0, { $divide: ["$ativos", "$total_alunos"] } ] } } },
+  { $sort: { taxa_retencao: -1 } }
+]);</code></pre>
+
+  <h3>6️⃣ Bolsistas em cursos de Medicina</h3>
+  <pre><code>db.alunos.aggregate([
+  { $lookup: { from: "cursos", localField: "curso_id", foreignField: "_id", as: "curso" } },
+  { $unwind: "$curso" },
+  { $match: { "curso.departamento": /medicina/i, bolsista: true } },
+  { $project: { _id: 0, nome: 1, "curso.nome": 1, "curso.departamento": 1 } }
+]);</code></pre>
+
+  <h3>7️⃣ Professores com alunos de múltiplas cidades</h3>
+  <pre><code>db.alunos.aggregate([
+  { $lookup: { from: "cursos", localField: "curso_id", foreignField: "_id", as: "curso" } },
+  { $unwind: "$curso" },
+  { $lookup: { from: "professores", localField: "curso.departamento", foreignField: "departamento", as: "professor" } },
+  { $unwind: "$professor" },
+  { $group: { _id: "$professor.nome", cidades: { $addToSet: "$endereco.cidade" } } },
+  { $addFields: { total_cidades: { $size: "$cidades" } } },
+  { $match: { total_cidades: { $gt: 1 } } },
+  { $sort: { total_cidades: -1 } }
+]);</code></pre>
+
+  <h3>8️⃣ ROI por departamento (alunos_ativos / (professores * cursos))</h3>
+  <pre><code>db.alunos.aggregate([
+  { $lookup: { from: "cursos", localField: "curso_id", foreignField: "_id", as: "curso" } },
+  { $unwind: "$curso" },
+  { $group: { _id: "$curso.departamento", alunos_ativos: { $sum: { $cond: ["$ativo", 1, 0] } }, cursos: { $addToSet: "$curso._id" } } },
+  { $lookup: { from: "professores", localField: "_id", foreignField: "departamento", as: "professores" } },
+  { $addFields: { num_professores: { $size: "$professores" }, num_cursos: { $size: "$cursos" }, roi: { $cond: [ { $eq: [{ $multiply: [{ $size: "$professores" }, { $size: "$cursos" }] }, 0] }, 0, { $divide: [ "$alunos_ativos", { $multiply: [{ $size: "$professores" }, { $size: "$cursos" }] } ] } ] } } },
+  { $project: { _id: 1, alunos_ativos: 1, num_professores: 1, num_cursos: 1, roi: 1 } },
+  { $sort: { roi: -1 } }
+]);</code></pre>
+
+  <h2>🧩 Exercício de apoio para estudos</h2>
+  <p>Crie três novas consultas explorando o banco <code>sistema_escolar</code> com base nos conceitos de <code>$lookup</code>, <code>$group</code>, <code>$match</code> e <code>$project</code>.</p>
+  <ol>
+    <li><strong>Contar o número de bolsistas por departamento.</strong><br>Dica: relacione <code>alunos</code> e <code>cursos</code> e agrupe por <code>curso.departamento</code>.</li>
+    <li><strong>Listar professores que lecionam em mais de um curso.</strong><br>Dica: use <code>$lookup</code> entre <code>professores</code> e <code>cursos</code> com base no <code>departamento</code> e conte as ocorrências.</li>
+    <li><strong>Descobrir as cidades com mais alunos ativos.</strong><br>Dica: filtre <code>ativo: true</code> e agrupe por <code>endereco.cidade</code> ordenando em ordem decrescente.</li>
+  </ol>
+
+  <div class="footer">
+    <p><strong>Autor:</strong> Prof. Diego Ramos Inácio<br>
+    <strong>Disciplina:</strong> Banco de Dados Não Relacional (MongoDB)<br>
+    <strong>Universidade de Vassouras – Campus Saquarema</strong></p>
+  </div>
+</body>
+</html>
+
