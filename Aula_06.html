@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introdução ao Neo4j - Apresentação</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #00d4ff, #00ffaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 25px;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            margin: 20px 0 15px;
+            color: #00ffaa;
+        }
+
+        .emoji {
+            font-size: 2rem;
+        }
+
+        .code-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #00d4ff;
+        }
+
+        .code-title {
+            color: #00d4ff;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        pre {
+            margin: 0 !important;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .concept-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #00ffaa;
+        }
+
+        .concept-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #00d4ff;
+        }
+
+        .concept-item strong {
+            color: #00d4ff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .warning {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #ffb3b3;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, rgba(0, 255, 170, 0.3) 0%, rgba(0, 255, 170, 0.1) 100%);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #00ffaa;
+            font-weight: bold;
+        }
+
+        ul {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .graph-visual {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .node {
+            display: inline-block;
+            background: linear-gradient(135deg, #00d4ff, #0077ff);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50%;
+            margin: 10px;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .relationship {
+            display: inline-block;
+            background: rgba(0, 255, 170, 0.3);
+            color: #00ffaa;
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin: 0 10px;
+            border: 2px solid #00ffaa;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .comparison-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #00d4ff;
+        }
+
+        .comparison-item h4 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .two-column, .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.8rem;
+            }
+            
+            .slide {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Slide 1: Título -->
+        <div class="slide active">
+            <h1>Introdução ao Neo4j</h1>
+            <div style="text-align: center; margin: 40px 0;">
+                <div style="font-size: 4rem; margin: 30px 0;">🔗</div>
+                <h2 style="margin-bottom: 20px;">Banco de Dados de Grafos</h2>
+                <div style="font-size: 1.2rem; color: #a8d8ff; line-height: 1.6;">
+                    <p>Nós • Relacionamentos • Propriedades</p>
+                    <p>Dominando o poder dos grafos com Cypher</p>
+                </div>
+            </div>
+            <div class="concept-box" style="margin-top: 50px;">
+                <h3>🎯 O que você vai aprender:</h3>
+                <ul>
+                    <li>O que são bancos de dados de grafos</li>
+                    <li>Conceitos fundamentais: Nós e Relacionamentos</li>
+                    <li>Linguagem Cypher (CRUD completo)</li>
+                    <li>Integração com Python usando Neo4j Driver</li>
+                    <li>Quando usar Neo4j vs MongoDB</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 2: O que é Neo4j -->
+        <div class="slide">
+            <h2><span class="emoji">🔍</span>O que é Neo4j?</h2>
+            
+            <div class="concept-box">
+                <p style="font-size: 1.3rem; margin-bottom: 25px;">
+                    <span class="highlight">Neo4j</span> é um banco de dados de grafos nativo que armazena dados como nós conectados por relacionamentos.
+                </p>
+                
+                <div class="concept-item">
+                    <strong>🔵 Nós (Nodes):</strong> Representam entidades (pessoas, produtos, lugares)
+                </div>
+                
+                <div class="concept-item">
+                    <strong>🔗 Relacionamentos (Relationships):</strong> Conexões entre nós com direção e tipo
+                </div>
+                
+                <div class="concept-item">
+                    <strong>🏷️ Propriedades (Properties):</strong> Atributos dos nós e relacionamentos
+                </div>
+                
+                <div class="concept-item">
+                    <strong>🏴 Labels (Rótulos):</strong> Categorias que classificam os nós
+                </div>
+            </div>
+
+            <div class="graph-visual">
+                <h3 style="color: #00ffaa; margin-bottom: 20px;">📊 Exemplo Visual de Grafo</h3>
+                <div style="margin: 30px 0;">
+                    <span class="node">Zé da Manga</span>
+                    <span class="relationship">→ CURSA →</span>
+                    <span class="node">Engenharia</span>
+                </div>
+                <div style="margin: 30px 0;">
+                    <span class="node">Bruno</span>
+                    <span class="relationship">→ AMIGO_DE →</span>
+                    <span class="node">Carla</span>
+                </div>
+                <p style="color: #a8d8ff; margin-top: 20px;">
+                    Cada círculo é um <strong>nó</strong>, cada seta é um <strong>relacionamento</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 3: Neo4j vs MongoDB -->
+        <div class="slide">
+            <h2><span class="emoji">⚖️</span>Neo4j vs MongoDB</h2>
+            
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>🔗 Neo4j (Grafos)</h4>
+                    <ul>
+                        <li>Otimizado para <strong>relacionamentos</strong></li>
+                        <li>Navegação rápida entre conexões</li>
+                        <li>Ideal para redes sociais, recomendações</li>
+                        <li>Linguagem: <strong>Cypher</strong></li>
+                    </ul>
+                </div>
+
+                <div class="comparison-item">
+                    <h4>🍃 MongoDB (Documentos)</h4>
+                    <ul>
+                        <li>Otimizado para <strong>documentos</strong></li>
+                        <li>Estrutura flexível (JSON)</li>
+                        <li>Ideal para aplicações web, catálogos</li>
+                        <li>Linguagem: <strong>mongosh/JS</strong></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3>🤔 Quando usar Neo4j?</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cenário</th>
+                            <th>Por que Neo4j?</th>
+                            <th>Exemplo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Redes Sociais</strong></td>
+                            <td>Consultas de amigos, amigos de amigos</td>
+                            <td>Facebook, LinkedIn</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Recomendações</strong></td>
+                            <td>Produtos que clientes similares compraram</td>
+                            <td>Amazon, Netflix</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Detecção de Fraude</strong></td>
+                            <td>Padrões de relacionamentos suspeitos</td>
+                            <td>Bancos, seguradoras</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grafos de Conhecimento</strong></td>
+                            <td>Conexões entre conceitos</td>
+                            <td>Google Knowledge Graph</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="warning">
+                <strong>💡 Dica:</strong> Use Neo4j quando os <strong>relacionamentos</strong> são tão importantes quanto os dados em si!
+            </div>
+        </div>
+
+        <!-- Slide 4: Conceitos Fundamentais -->
+        <div class="slide">
+            <h2><span class="emoji">📚</span>Conceitos Fundamentais</h2>
+            
+            <div class="concept-box">
+                <h3>🔵 NÓS (Nodes)</h3>
+                <p style="margin: 15px 0;">Entidades do seu domínio. Podem ter:</p>
+                <ul>
+                    <li><strong>Labels:</strong> Categorias (ex: :Aluno, :Curso, :Professor)</li>
+                    <li><strong>Propriedades:</strong> Atributos (ex: nome, idade, email)</li>
+                </ul>
+                <div class="code-container" style="margin-top: 15px;">
+                    <div class="code-title">Exemplo de Nó</div>
+                    <pre><code class="language-cypher">(:Aluno {nome: "Zé da Manga", idade: 23, curso: "Engenharia"})</code></pre>
+                </div>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔗 RELACIONAMENTOS (Relationships)</h3>
+                <p style="margin: 15px 0;">Conexões direcionadas entre nós. Têm:</p>
+                <ul>
+                    <li><strong>Tipo:</strong> Nome do relacionamento (ex: CURSA, AMIGO_DE)</li>
+                    <li><strong>Direção:</strong> De um nó para outro (→)</li>
+                    <li><strong>Propriedades:</strong> Atributos opcionais (ex: desde, nota)</li>
+                </ul>
+                <div class="code-container" style="margin-top: 15px;">
+                    <div class="code-title">Exemplo de Relacionamento</div>
+                    <pre><code class="language-cypher">(aluno)-[:CURSA {desde: 2023, periodo: 3}]->(curso)</code></pre>
+                </div>
+            </div>
+
+            <div class="concept-box">
+                <h3>📝 PADRÕES (Patterns)</h3>
+                <p style="margin: 15px 0;">Formas de descrever estruturas de grafos:</p>
+                <div class="code-container" style="margin-top: 15px;">
+                    <pre><code class="language-cypher">// Nó simples
+(n)
+
+// Nó com label
+(n:Aluno)
+
+// Nó com label e propriedades
+(n:Aluno {nome: "Bruno"})
+
+// Relacionamento
+(a:Aluno)-[:CURSA]->(c:Curso)
+
+// Relacionamento bidirecional
+(a:Aluno)-[:AMIGO_DE]-(b:Aluno)</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: CREATE - Criar Nós -->
+        <div class="slide">
+            <h2><span class="emoji">🟢</span>CREATE - Criar Nós e Relacionamentos</h2>
+            
+            <div class="code-container">
+                <div class="code-title">💡 Criar um NÓ simples</div>
+                <pre><code class="language-cypher">CREATE (a:Aluno {
+  nome: "Zé da Manga",
+  idade: 23,
+  curso: "Engenharia",
+  ativo: true
+})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Criar VÁRIOS nós de uma vez</div>
+                <pre><code class="language-cypher">CREATE 
+  (a1:Aluno {nome: "Bruno", idade: 21, curso: "Medicina"}),
+  (a2:Aluno {nome: "Carla", idade: 25, curso: "Direito"}),
+  (a3:Aluno {nome: "Diego", idade: 22, curso: "Computação"})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Criar nós de CURSOS</div>
+                <pre><code class="language-cypher">CREATE 
+  (c1:Curso {nome: "Engenharia", duracao: 5}),
+  (c2:Curso {nome: "Medicina", duracao: 6}),
+  (c3:Curso {nome: "Direito", duracao: 5})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Criar nós COM relacionamento</div>
+                <pre><code class="language-cypher">CREATE (a:Aluno {nome: "Pedro", idade: 20})
+CREATE (c:Curso {nome: "Computação"})
+CREATE (a)-[:CURSA {desde: 2023}]->(c)</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔑 Conceitos importantes:</h3>
+                <ul>
+                    <li><strong>CREATE:</strong> Sempre cria novos nós (pode gerar duplicatas)</li>
+                    <li><strong>Labels</strong> começam com letra maiúscula (:Aluno, :Curso)</li>
+                    <li><strong>Propriedades</strong> usam sintaxe de objeto {chave: valor}</li>
+                    <li>Relacionamentos são criados após os nós existirem</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 6: MATCH (READ) -->
+        <div class="slide">
+            <h2><span class="emoji">🔵</span>MATCH - Consultar Dados (READ)</h2>
+            
+            <div class="code-container">
+                <div class="code-title">💡 Buscar TODOS os alunos</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno)
+RETURN a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Buscar por propriedade específica</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Zé da Manga"})
+RETURN a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Buscar com filtro (idade maior que 22)</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno)
+WHERE a.idade > 22
+RETURN a.nome, a.idade</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Buscar relacionamentos (quem cursa o quê?)</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno)-[:CURSA]->(c:Curso)
+RETURN a.nome AS aluno, c.nome AS curso</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Buscar amigos de amigos</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Bruno"})-[:AMIGO_DE]->(amigo)-[:AMIGO_DE]->(amigoDoAmigo)
+RETURN amigoDoAmigo.nome</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔑 Cláusulas importantes:</h3>
+                <ul>
+                    <li><strong>MATCH:</strong> Encontra padrões no grafo</li>
+                    <li><strong>WHERE:</strong> Filtra resultados com condições</li>
+                    <li><strong>RETURN:</strong> Define o que será retornado</li>
+                    <li><strong>AS:</strong> Cria alias para os resultados</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 7: UPDATE (SET & REMOVE) -->
+        <div class="slide">
+            <h2><span class="emoji">🟠</span>SET & REMOVE - Atualizar Dados</h2>
+            
+            <div class="code-container">
+                <div class="code-title">💡 Atualizar propriedade de UM nó</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Zé da Manga"})
+SET a.ativo = false
+RETURN a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Atualizar MÚLTIPLAS propriedades</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Bruno"})
+SET a.idade = 22, a.email = "bruno@email.com"
+RETURN a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Adicionar uma nova propriedade</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno)
+WHERE a.curso = "Engenharia"
+SET a.periodo = 5
+RETURN a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Adicionar novo LABEL a um nó</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Carla"})
+SET a:Graduado
+RETURN labels(a), a.nome</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 REMOVER uma propriedade</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Diego"})
+REMOVE a.email
+RETURN a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 REMOVER um label</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno:Graduado {nome: "Carla"})
+REMOVE a:Graduado
+RETURN a</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔑 Operações de atualização:</h3>
+                <ul>
+                    <li><strong>SET:</strong> Define ou atualiza propriedades e labels</li>
+                    <li><strong>REMOVE:</strong> Remove propriedades ou labels</li>
+                    <li>Use WHERE para atualizar múltiplos nós</li>
+                    <li>Sempre use RETURN para confirmar mudanças</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 8: DELETE -->
+        <div class="slide">
+            <h2><span class="emoji">🔴</span>DELETE - Remover Dados</h2>
+            
+            <div class="code-container">
+                <div class="code-title">💡 Deletar UM nó (sem relacionamentos)</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Carla"})
+DELETE a</code></pre>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ ERRO:</strong> Não é possível deletar um nó que tenha relacionamentos!
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Deletar relacionamento ANTES do nó</div>
+                <pre><code class="language-cypher">// Primeiro, deletar os relacionamentos
+MATCH (a:Aluno {nome: "Bruno"})-[r]-()
+DELETE r
+
+// Depois, deletar o nó
+MATCH (a:Aluno {nome: "Bruno"})
+DELETE a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Deletar nó E seus relacionamentos (DETACH DELETE)</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Diego"})
+DETACH DELETE a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Deletar TODOS os nós de um label</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno)
+DETACH DELETE a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Deletar TODO o banco (cuidado!)</div>
+                <pre><code class="language-cypher">MATCH (n)
+DETACH DELETE n</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔑 Boas práticas de exclusão:</h3>
+                <ul>
+                    <li><strong>DELETE:</strong> Remove nós sem relacionamentos</li>
+                    <li><strong>DETACH DELETE:</strong> Remove nós E seus relacionamentos</li>
+                    <li>Sempre teste com MATCH + RETURN antes de DELETE</li>
+                    <li>Use filtros específicos para evitar exclusões acidentais</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 9: MERGE & CREATE Unique -->
+        <div class="slide">
+            <h2><span class="emoji">🔄</span>MERGE - Criar ou Encontrar</h2>
+            
+            <div class="concept-box">
+                <p style="font-size: 1.2rem; margin-bottom: 20px;">
+                    <span class="highlight">MERGE</span> encontra um padrão existente ou cria um novo se não existir.
+                    Evita duplicatas!
+                </p>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 MERGE vs CREATE</div>
+                <pre><code class="language-cypher">// CREATE sempre cria um novo nó (pode duplicar)
+CREATE (a:Aluno {nome: "Pedro"})
+
+// MERGE cria apenas se não existir
+MERGE (a:Aluno {nome: "Pedro"})
+RETURN a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 MERGE com relacionamento</div>
+                <pre><code class="language-cypher">// Garante que o relacionamento existe apenas uma vez
+MERGE (a:Aluno {nome: "Pedro"})
+MERGE (c:Curso {nome: "Computação"})
+MERGE (a)-[:CURSA]->(c)</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 MERGE com ON CREATE e ON MATCH</div>
+                <pre><code class="language-cypher">MERGE (a:Aluno {nome: "Ana"})
+ON CREATE SET a.criado_em = timestamp(), a.tentativas = 1
+ON MATCH SET a.tentativas = a.tentativas + 1
+RETURN a</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Criar relacionamento único</div>
+                <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Bruno"})
+MATCH (b:Aluno {nome: "Carla"})
+MERGE (a)-[r:AMIGO_DE]-(b)
+RETURN a.nome, type(r), b.nome</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔑 Quando usar MERGE:</h3>
+                <ul>
+                    <li>Quando você quer evitar duplicatas</li>
+                    <li>Para criar relacionamentos únicos</li>
+                    <li>Em importações de dados</li>
+                    <li>Use ON CREATE/ON MATCH para lógica condicional</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 10: Python com Neo4j Driver -->
+        <div class="slide">
+            <h2><span class="emoji">🐍</span>Python com Neo4j Driver</h2>
+            
+            <div class="code-container">
+                <div class="code-title">💡 Instalação e configuração</div>
+                <pre><code class="language-bash"># Instalar o driver
+pip install neo4j
+
+# Iniciar Neo4j (Docker)
+docker run -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/password neo4j</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Conexão básica</div>
+                <pre><code class="language-python">from neo4j import GraphDatabase
+
+# Conectar ao Neo4j
+uri = "bolt://localhost:7687"
+driver = GraphDatabase.driver(uri, auth=("neo4j", "password"))
+
+# Função para executar queries
+def run_query(query, parameters=None):
+    with driver.session() as session:
+        result = session.run(query, parameters)
+        return [record for record in result]
+
+# Fechar conexão quando terminar
+driver.close()</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 CREATE - Inserir dados</div>
+                <pre><code class="language-python"># Criar um aluno
+query = """
+CREATE (a:Aluno {nome: $nome, idade: $idade, curso: $curso})
+RETURN a
+"""
+parameters = {"nome": "Zé da Manga", "idade": 23, "curso": "Engenharia"}
+result = run_query(query, parameters)
+
+# Criar múltiplos alunos
+query = """
+UNWIND $alunos AS aluno
+CREATE (a:Aluno {nome: aluno.nome, idade: aluno.idade})
+RETURN a
+"""
+alunos = [
+    {"nome": "Bruno", "idade": 21},
+    {"nome": "Carla", "idade": 25}
+]
+result = run_query(query, {"alunos": alunos})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 READ - Consultar dados</div>
+                <pre><code class="language-python"># Buscar todos os alunos
+query = "MATCH (a:Aluno) RETURN a.nome AS nome, a.idade AS idade"
+alunos = run_query(query)
+for aluno in alunos:
+    print(f"{aluno['nome']}: {aluno['idade']} anos")
+
+# Buscar com filtro
+query = """
+MATCH (a:Aluno)
+WHERE a.idade > $idade_minima
+RETURN a.nome, a.idade
+"""
+result = run_query(query, {"idade_minima": 22})</code></pre>
+            </div>
+        </div>
+
+        <!-- Slide 11: Python UPDATE & DELETE -->
+        <div class="slide">
+            <h2><span class="emoji">🟠🔴</span>Python - UPDATE & DELETE</h2>
+            
+            <div class="two-column">
+                <div>
+                    <h3>🟠 UPDATE</h3>
+                    
+                    <div class="code-container">
+                        <div class="code-title">Atualizar propriedade</div>
+                        <pre><code class="language-python">query = """
+MATCH (a:Aluno {nome: $nome})
+SET a.ativo = $ativo
+RETURN a
+"""
+run_query(query, {
+    "nome": "Zé da Manga",
+    "ativo": False
+})</code></pre>
+                    </div>
+
+                    <div class="code-container">
+                        <div class="code-title">Adicionar propriedades</div>
+                        <pre><code class="language-python">query = """
+MATCH (a:Aluno)
+WHERE a.curso = $curso
+SET a.periodo = $periodo
+"""
+run_query(query, {
+    "curso": "Engenharia",
+    "periodo": 5
+})</code></pre>
+                    </div>
+
+                    <div class="code-container">
+                        <div class="code-title">Incrementar valor</div>
+                        <pre><code class="language-python">query = """
+MATCH (a:Aluno {nome: $nome})
+SET a.idade = a.idade + 1
+RETURN a
+"""
+run_query(query, {
+    "nome": "Bruno"
+})</code></pre>
+                    </div>
+                </div>
+
+                <div>
+                    <h3>🔴 DELETE</h3>
+                    
+                    <div class="code-container">
+                        <div class="code-title">Deletar nó</div>
+                        <pre><code class="language-python">query = """
+MATCH (a:Aluno {nome: $nome})
+DETACH DELETE a
+"""
+run_query(query, {
+    "nome": "Carla"
+})</code></pre>
+                    </div>
+
+                    <div class="code-container">
+                        <div class="code-title">Deletar com filtro</div>
+                        <pre><code class="language-python">query = """
+MATCH (a:Aluno)
+WHERE a.idade < $idade
+DETACH DELETE a
+"""
+run_query(query, {
+    "idade": 20
+})</code></pre>
+                    </div>
+
+                    <div class="code-container">
+                        <div class="code-title">Contar nós</div>
+                        <pre><code class="language-python">query = """
+MATCH (a:Aluno)
+WHERE a.curso = $curso
+RETURN count(a) AS total
+"""
+result = run_query(query, {
+    "curso": "Engenharia"
+})
+print(result[0]["total"])</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box">
+                <h3>💡 Boas práticas Python + Neo4j:</h3>
+                <ul>
+                    <li>Sempre use <strong>parâmetros</strong> ($nome, $idade) para evitar injection</li>
+                    <li>Use <strong>with driver.session()</strong> para gerenciar sessões</li>
+                    <li>Feche o driver com <strong>driver.close()</strong> ao terminar</li>
+                    <li>Para grandes volumes, use <strong>UNWIND</strong> e transações</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 12: Queries Avançadas -->
+        <div class="slide">
+            <h2><span class="emoji">🚀</span>Queries Avançadas</h2>
+            
+            <div class="code-container">
+                <div class="code-title">💡 Agregações e estatísticas</div>
+                <pre><code class="language-cypher">// Contar alunos por curso
+MATCH (a:Aluno)-[:CURSA]->(c:Curso)
+RETURN c.nome AS curso, count(a) AS total_alunos
+ORDER BY total_alunos DESC
+
+// Média de idade por curso
+MATCH (a:Aluno)-[:CURSA]->(c:Curso)
+RETURN c.nome AS curso, avg(a.idade) AS media_idade</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Caminhos mais curtos</div>
+                <pre><code class="language-cypher">// Menor caminho entre dois alunos
+MATCH path = shortestPath(
+  (a1:Aluno {nome: "Bruno"})-[:AMIGO_DE*]-(a2:Aluno {nome: "Diego"})
+)
+RETURN path, length(path)</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Recomendações (amigos em comum)</div>
+                <pre><code class="language-cypher">// Encontrar pessoas que meus amigos conhecem mas eu não
+MATCH (eu:Aluno {nome: "Bruno"})-[:AMIGO_DE]->(amigo)-[:AMIGO_DE]->(recomendacao)
+WHERE NOT (eu)-[:AMIGO_DE]-(recomendacao) AND eu <> recomendacao
+RETURN recomendacao.nome, count(amigo) AS amigos_em_comum
+ORDER BY amigos_em_comum DESC</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">💡 Análise de comunidades</div>
+                <pre><code class="language-cypher">// Alunos do mesmo curso que são amigos
+MATCH (a1:Aluno)-[:CURSA]->(c:Curso)<-[:CURSA]-(a2:Aluno)
+WHERE (a1)-[:AMIGO_DE]-(a2)
+RETURN c.nome AS curso, 
+       collect(a1.nome) AS alunos_amigos,
+       count(*) AS conexoes</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔑 Funções úteis:</h3>
+                <ul>
+                    <li><strong>count():</strong> Contagem</li>
+                    <li><strong>avg():</strong> Média</li>
+                    <li><strong>collect():</strong> Agrupa em lista</li>
+                    <li><strong>shortestPath():</strong> Caminho mais curto</li>
+                    <li><strong>length():</strong> Tamanho do caminho</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 13: Resumo Final -->
+        <div class="slide">
+            <h2><span class="emoji">🎯</span>Resumo e Boas Práticas</h2>
+            
+            <div class="concept-box">
+                <h3>📋 Checklist Neo4j</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                    <div>
+                        <h4 style="color: #00d4ff; margin-bottom: 15px;">🟢 CREATE</h4>
+                        <ul>
+                            <li>✅ <code>CREATE</code> para novos nós</li>
+                            <li>✅ <code>MERGE</code> para evitar duplicatas</li>
+                            <li>✅ Labels com letra maiúscula</li>
+                        </ul>
+
+                        <h4 style="color: #00d4ff; margin: 20px 0 15px;">🔵 MATCH (READ)</h4>
+                        <ul>
+                            <li>✅ <code>MATCH</code> para consultar padrões</li>
+                            <li>✅ <code>WHERE</code> para filtros</li>
+                            <li>✅ <code>RETURN</code> para resultados</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #00d4ff; margin-bottom: 15px;">🟠 UPDATE</h4>
+                        <ul>
+                            <li>✅ <code>SET</code> para propriedades e labels</li>
+                            <li>✅ <code>REMOVE</code> para remover</li>
+                            <li>✅ Use WHERE para múltiplos nós</li>
+                        </ul>
+
+                        <h4 style="color: #00d4ff; margin: 20px 0 15px;">🔴 DELETE</h4>
+                        <ul>
+                            <li>✅ <code>DELETE</code> para nós sem relacionamentos</li>
+                            <li>✅ <code>DETACH DELETE</code> para nós com relacionamentos</li>
+                            <li>✅ Sempre teste antes com MATCH</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box" style="margin-top: 30px;">
+                <h3>💡 Dicas de Ouro Neo4j</h3>
+                <div class="concept-item">
+                    <strong>🎯 Use MERGE:</strong> Para evitar duplicatas ao criar nós e relacionamentos
+                </div>
+                <div class="concept-item">
+                    <strong>🔍 Sempre teste:</strong> Use MATCH + RETURN antes de DELETE ou SET
+                </div>
+                <div class="concept-item">
+                    <strong>📊 Índices:</strong> Crie índices para propriedades frequentemente consultadas
+                </div>
+                <div class="concept-item">
+                    <strong>🔒 Parâmetros:</strong> Use sempre parâmetros ($nome) em Python para segurança
+                </div>
+                <div class="concept-item">
+                    <strong>🎓 Visualize:</strong> Use o Neo4j Browser (http://localhost:7474) para ver o grafo
+                </div>
+            </div>
+
+            <div class="comparison-grid" style="margin-top: 30px;">
+                <div class="comparison-item">
+                    <h4>📚 Recursos para aprender mais:</h4>
+                    <ul>
+                        <li><strong>Neo4j Browser:</strong> Interface visual</li>
+                        <li><strong>Cypher Refcard:</strong> Referência rápida</li>
+                        <li><strong>GraphAcademy:</strong> Cursos gratuitos</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>🛠️ Ferramentas úteis:</h4>
+                    <ul>
+                        <li><strong>Neo4j Desktop:</strong> Ambiente local</li>
+                        <li><strong>Neo4j Aura:</strong> Cloud database</li>
+                        <li><strong>APOC:</strong> Biblioteca de procedimentos</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px; font-size: 1.2rem;">
+                <p style="color: #00d4ff;">🚀 <strong>Parabéns!</strong> Agora você domina Neo4j!</p>
+                <p style="margin-top: 15px; color: #a8d8ff;">Use o poder dos grafos para criar aplicações incríveis com relacionamentos complexos</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação -->
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo →</button>
+    </div>
+
+    <!-- Contador de slides -->
+    <div class="slide-counter">
+        <span id="slideCounter">1 / 13</span>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            if (n >= totalSlides) currentSlide = 0;
+            if (n < 0) currentSlide = totalSlides - 1;
+            
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+            
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            showSlide(currentSlide);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (event.key === 'ArrowRight') {
+                changeSlide(1);
+            } else if (event.key === 'Home') {
+                currentSlide = 0;
+                showSlide(currentSlide);
+            } else if (event.key === 'End') {
+                currentSlide = totalSlides - 1;
+                showSlide(currentSlide);
+            }
+        });
+
+        showSlide(0);
+    </script>
+</body>
+</html>
