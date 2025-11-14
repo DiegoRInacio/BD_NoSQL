@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exercícios MongoDB e Neo4j - Teoria e Prática</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e8e8e8;
+      margin: 0;
+      padding: 2rem;
+      line-height: 1.7;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 3rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    h1 {
+      font-size: 3rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      background: linear-gradient(45deg, #00d4ff, #00ffaa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #a8d8ff;
+      font-size: 1.2rem;
+      margin-bottom: 3rem;
+    }
+    
+    h2 {
+      color: #00d4ff;
+      font-size: 2rem;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+    }
+    
+    h3 {
+      color: #00ffaa;
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    h4 {
+      color: #60d9ff;
+      font-size: 1.2rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.8rem;
+    }
+    
+    .section {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 15px;
+      padding: 2rem;
+      margin: 2rem 0;
+      border-left: 4px solid #00d4ff;
+    }
+    
+    .exercise {
+      background: rgba(0, 255, 170, 0.05);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-left: 3px solid #00ffaa;
+    }
+    
+    .theory-question {
+      background: rgba(0, 212, 255, 0.05);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-left: 3px solid #00d4ff;
+    }
+    
+    pre {
+      background: #1e1e1e;
+      color: #e8e8e8;
+      padding: 1.5rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    code {
+      color: #2ecc71;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95rem;
+    }
+    
+    .code-comment {
+      color: #6a9fb5;
+      font-style: italic;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .badge-easy {
+      background: rgba(0, 255, 170, 0.2);
+      color: #00ffaa;
+      border: 1px solid #00ffaa;
+    }
+    
+    .badge-medium {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+      border: 1px solid #ffc107;
+    }
+    
+    .badge-hard {
+      background: rgba(255, 87, 87, 0.2);
+      color: #ff5757;
+      border: 1px solid #ff5757;
+    }
+    
+    .badge-mongodb {
+      background: rgba(0, 237, 100, 0.2);
+      color: #00ed64;
+      border: 1px solid #00ed64;
+    }
+    
+    .badge-neo4j {
+      background: rgba(0, 139, 220, 0.2);
+      color: #008bdc;
+      border: 1px solid #008bdc;
+    }
+    
+    .badge-both {
+      background: rgba(138, 43, 226, 0.2);
+      color: #b87cff;
+      border: 1px solid #b87cff;
+    }
+    
+    ul, ol {
+      margin: 1rem 0;
+      padding-left: 2rem;
+    }
+    
+    li {
+      margin: 0.8rem 0;
+    }
+    
+    strong {
+      color: #00d4ff;
+    }
+    
+    .highlight {
+      background: rgba(0, 255, 170, 0.2);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      color: #00ffaa;
+    }
+    
+    .tip {
+      background: rgba(255, 193, 7, 0.1);
+      border-left: 4px solid #ffc107;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 5px;
+      color: #ffd54f;
+    }
+    
+    .warning {
+      background: rgba(255, 87, 87, 0.1);
+      border-left: 4px solid #ff5757;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 5px;
+      color: #ff8a8a;
+    }
+    
+    .footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      color: #a8d8ff;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    th {
+      background: rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+      font-weight: bold;
+    }
+    
+    .toc {
+      background: rgba(0, 212, 255, 0.05);
+      border-radius: 15px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+    
+    .toc a {
+      color: #00ffaa;
+      text-decoration: none;
+      display: block;
+      padding: 0.5rem 0;
+      transition: all 0.3s ease;
+    }
+    
+    .toc a:hover {
+      color: #00d4ff;
+      padding-left: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 Exercícios MongoDB e Neo4j</h1>
+    <p class="subtitle">Banco de Dados Não Relacional - Teoria e Prática</p>
+    
+    <!-- ÍNDICE -->
+    <div class="toc">
+      <h3>📑 Índice</h3>
+      <a href="#parte1">Parte 1: Questões Teóricas</a>
+      <a href="#parte2">Parte 2: Exercícios Práticos MongoDB</a>
+      <a href="#parte3">Parte 3: Exercícios Práticos Neo4j</a>
+      <a href="#parte4">Parte 4: Exercícios Comparativos e Integrados</a>
+      <a href="#gabarito">Gabarito e Explicações</a>
+    </div>
+
+    <!-- PARTE 1: QUESTÕES TEÓRICAS -->
+    <div id="parte1" class="section">
+      <h2>📚 Parte 1: Questões Teóricas</h2>
+      <p>Responda as questões a seguir demonstrando seu conhecimento sobre bancos de dados não relacionais.</p>
+      
+      <div class="theory-question">
+        <h4>Questão 1 - Conceitos Fundamentais</h4>
+        <span class="badge badge-easy">Fácil</span>
+        <span class="badge badge-both">MongoDB + Neo4j</span>
+        <p><strong>a)</strong> Explique a principal diferença entre bancos de dados relacionais (SQL) e não relacionais (NoSQL).</p>
+        <p><strong>b)</strong> Quais são as 4 principais categorias de bancos NoSQL? Dê um exemplo de cada.</p>
+        <p><strong>c)</strong> Em qual categoria o MongoDB e o Neo4j se encaixam?</p>
+      </div>
+
+      <div class="theory-question">
+        <h4>Questão 2 - MongoDB: Estrutura de Dados</h4>
+        <span class="badge badge-easy">Fácil</span>
+        <span class="badge badge-mongodb">MongoDB</span>
+        <p><strong>a)</strong> O que é um documento no MongoDB? Como ele é estruturado?</p>
+        <p><strong>b)</strong> Qual é a diferença entre uma coleção e uma tabela SQL?</p>
+        <p><strong>c)</strong> Explique o conceito de schema flexível (schema-less) no MongoDB.</p>
+      </div>
+
+      <div class="theory-question">
+        <h4>Questão 3 - Neo4j: Modelo de Grafos</h4>
+        <span class="badge badge-easy">Fácil</span>
+        <span class="badge badge-neo4j">Neo4j</span>
+        <p><strong>a)</strong> Defina o que são nós (nodes) e relacionamentos (relationships) em um banco de grafos.</p>
+        <p><strong>b)</strong> O que são labels e propriedades no Neo4j?</p>
+        <p><strong>c)</strong> Por que grafos são eficientes para consultas de relacionamentos complexos?</p>
+      </div>
+
+      <div class="theory-question">
+        <h4>Questão 4 - Agregações no MongoDB</h4>
+        <span class="badge badge-medium">Médio</span>
+        <span class="badge badge-mongodb">MongoDB</span>
+        <p><strong>a)</strong> O que é o Aggregation Pipeline do MongoDB?</p>
+        <p><strong>b)</strong> Explique a função dos seguintes operadores:</p>
+        <ul>
+          <li><code>$match</code></li>
+          <li><code>$group</code></li>
+          <li><code>$lookup</code></li>
+          <li><code>$project</code></li>
+        </ul>
+        <p><strong>c)</strong> Qual é a ordem de execução no pipeline de agregação?</p>
+      </div>
+
+      <div class="theory-question">
+        <h4>Questão 5 - Cypher vs SQL</h4>
+        <span class="badge badge-medium">Médio</span>
+        <span class="badge badge-neo4j">Neo4j</span>
+        <p><strong>a)</strong> O que é Cypher e para que serve?</p>
+        <p><strong>b)</strong> Compare a sintaxe de criação de dados:</p>
+        <table>
+          <tr>
+            <th>SQL</th>
+            <th>Cypher</th>
+          </tr>
+          <tr>
+            <td>INSERT INTO</td>
+            <td>?</td>
+          </tr>
+          <tr>
+            <td>SELECT ... JOIN</td>
+            <td>?</td>
+          </tr>
+          <tr>
+            <td>UPDATE</td>
+            <td>?</td>
+          </tr>
+          <tr>
+            <td>DELETE</td>
+            <td>?</td>
+          </tr>
+        </table>
+        <p><strong>c)</strong> Quando usar <code>MERGE</code> ao invés de <code>CREATE</code>?</p>
+      </div>
+
+      <div class="theory-question">
+        <h4>Questão 6 - Casos de Uso</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <span class="badge badge-both">MongoDB + Neo4j</span>
+        <p><strong>a)</strong> Para cada cenário abaixo, indique qual banco de dados seria mais adequado (MongoDB ou Neo4j) e justifique:</p>
+        <ol>
+          <li>Sistema de recomendação de produtos baseado em compras de usuários similares</li>
+          <li>Catálogo de e-commerce com milhões de produtos e variações</li>
+          <li>Rede social com análise de amigos em comum e influenciadores</li>
+          <li>Sistema de logs e métricas de aplicações</li>
+          <li>Detecção de fraude bancária através de padrões de transações</li>
+        </ol>
+        <p><strong>b)</strong> É possível usar ambos os bancos em uma mesma aplicação? Dê um exemplo.</p>
+      </div>
+
+      <div class="theory-question">
+        <h4>Questão 7 - Performance e Otimização</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <span class="badge badge-both">MongoDB + Neo4j</span>
+        <p><strong>a)</strong> Explique o conceito de índices. Como eles melhoram a performance?</p>
+        <p><strong>b)</strong> No MongoDB, quando usar índices compostos?</p>
+        <p><strong>c)</strong> No Neo4j, qual é a importância de criar índices em propriedades frequentemente consultadas?</p>
+        <p><strong>d)</strong> Compare o conceito de JOIN em SQL com:</p>
+        <ul>
+          <li><code>$lookup</code> no MongoDB</li>
+          <li>Padrões de relacionamento no Neo4j</li>
+        </ul>
+      </div>
+
+      <div class="theory-question">
+        <h4>Questão 8 - Modelagem de Dados</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <span class="badge badge-both">MongoDB + Neo4j</span>
+        <p>Considere um sistema universitário com as seguintes entidades:</p>
+        <ul>
+          <li>Alunos (nome, matrícula, email, curso)</li>
+          <li>Professores (nome, departamento, especialidade)</li>
+          <li>Cursos (nome, departamento, carga horária)</li>
+          <li>Disciplinas (nome, código, professor responsável)</li>
+          <li>Matrículas (aluno, disciplina, semestre, nota)</li>
+        </ul>
+        <p><strong>a)</strong> Como você modelaria esses dados no MongoDB? (estrutura de documentos e coleções)</p>
+        <p><strong>b)</strong> Como você modelaria esses dados no Neo4j? (nós, labels e relacionamentos)</p>
+        <p><strong>c)</strong> Quais consultas seriam mais eficientes em cada banco?</p>
+      </div>
+    </div>
+
+    <!-- PARTE 2: EXERCÍCIOS PRÁTICOS MONGODB -->
+    <div id="parte2" class="section">
+      <h2>🍃 Parte 2: Exercícios Práticos MongoDB</h2>
+      <p><strong>Contexto:</strong> Use o banco <code>biblioteca</code> com as seguintes coleções:</p>
+      
+      <pre><code class="code-comment">// Estrutura das coleções:</code>
+<code>db.livros: { 
+  _id, titulo, autor, ano_publicacao, genero, 
+  editora, isbn, paginas, disponivel 
+}
+
+db.usuarios: { 
+  _id, nome, email, data_cadastro, 
+  endereco: { rua, cidade, estado, cep }, 
+  tipo: "aluno" | "professor" | "funcionario" 
+}
+
+db.emprestimos: { 
+  _id, usuario_id, livro_id, data_emprestimo, 
+  data_devolucao_prevista, data_devolucao_real, 
+  status: "ativo" | "devolvido" | "atrasado" 
+}</code></pre>
+
+      <div class="exercise">
+        <h4>Exercício 2.1 - Consultas Básicas</h4>
+        <span class="badge badge-easy">Fácil</span>
+        <p><strong>a)</strong> Liste todos os livros do gênero "Ficção Científica" publicados após 2010.</p>
+        <p><strong>b)</strong> Encontre todos os usuários da cidade de "Saquarema".</p>
+        <p><strong>c)</strong> Conte quantos livros estão disponíveis na biblioteca.</p>
+        <p><strong>d)</strong> Liste os 10 livros mais recentes ordenados por ano de publicação.</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 2.2 - Consultas com Agregação</h4>
+        <span class="badge badge-medium">Médio</span>
+        <p><strong>a)</strong> Quantos livros existem por gênero? Ordene do maior para o menor.</p>
+        <p><strong>b)</strong> Qual é a média de páginas dos livros publicados por cada editora?</p>
+        <p><strong>c)</strong> Liste os autores que têm mais de 3 livros cadastrados.</p>
+        <p><strong>d)</strong> Quantos usuários existem de cada tipo (aluno, professor, funcionário)?</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 2.3 - Lookup e Relacionamentos</h4>
+        <span class="badge badge-medium">Médio</span>
+        <p><strong>a)</strong> Liste todos os empréstimos ativos com os dados completos do usuário e do livro.</p>
+        <p><strong>b)</strong> Encontre os 5 usuários que mais fizeram empréstimos (histórico completo).</p>
+        <p><strong>c)</strong> Quais livros nunca foram emprestados?</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 2.4 - KPIs e Análises Avançadas</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <p><strong>a)</strong> Calcule a taxa de ocupação da biblioteca: (empréstimos ativos / total de livros).</p>
+        <p><strong>b)</strong> Liste os livros com empréstimos atrasados, incluindo:</p>
+        <ul>
+          <li>Dados do livro</li>
+          <li>Dados do usuário</li>
+          <li>Dias de atraso</li>
+        </ul>
+        <p><strong>c)</strong> Ranking de gêneros mais populares baseado no número de empréstimos (não quantidade de livros).</p>
+        <p><strong>d)</strong> Análise de sazonalidade: quantos empréstimos foram feitos em cada mês do último ano?</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 2.5 - Operações de Escrita</h4>
+        <span class="badge badge-easy">Fácil</span>
+        <p><strong>a)</strong> Insira 3 novos livros na coleção.</p>
+        <p><strong>b)</strong> Atualize o endereço de um usuário específico.</p>
+        <p><strong>c)</strong> Marque um empréstimo como "devolvido" e registre a data de devolução real.</p>
+        <p><strong>d)</strong> Remova todos os usuários que se cadastraram há mais de 5 anos e nunca fizeram empréstimos.</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 2.6 - Desafio Final MongoDB</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <p>Crie uma consulta que retorne um dashboard completo da biblioteca com:</p>
+        <ol>
+          <li>Total de livros cadastrados</li>
+          <li>Total de usuários ativos</li>
+          <li>Total de empréstimos ativos</li>
+          <li>Total de empréstimos atrasados</li>
+          <li>Top 5 livros mais emprestados</li>
+          <li>Top 5 usuários mais assíduos</li>
+          <li>Gênero mais popular</li>
+          <li>Taxa média de devolução no prazo (devoluções no prazo / total de devoluções)</li>
+        </ol>
+        <div class="tip">
+          💡 <strong>Dica:</strong> Use múltiplos pipelines com $lookup e $facet para criar um único resultado agregado.
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE 3: EXERCÍCIOS PRÁTICOS NEO4J -->
+    <div id="parte3" class="section">
+      <h2>🔗 Parte 3: Exercícios Práticos Neo4j</h2>
+      <p><strong>Contexto:</strong> Construa um grafo de rede social acadêmica com:</p>
+      
+      <pre><code class="code-comment">// Estrutura do grafo:</code>
+<code>Nós (Labels):
+- (:Pessoa {nome, idade, email, cidade})
+- (:Universidade {nome, cidade, ranking})
+- (:Curso {nome, area, duracao_anos})
+- (:Artigo {titulo, ano, citacoes})
+
+Relacionamentos:
+- (:Pessoa)-[:ESTUDA_EM {inicio, status}]->(:Universidade)
+- (:Pessoa)-[:CURSA {semestre}]->(:Curso)
+- (:Pessoa)-[:AMIGO_DE {desde}]->(:Pessoa)
+- (:Pessoa)-[:PUBLICOU {role}]->(:Artigo)
+- (:Artigo)-[:CITA]->(:Artigo)
+- (:Pessoa)-[:ORIENTADOR_DE]->(:Pessoa)</code></pre>
+
+      <div class="exercise">
+        <h4>Exercício 3.1 - Criação de Dados</h4>
+        <span class="badge badge-easy">Fácil</span>
+        <p><strong>a)</strong> Crie 5 pessoas com propriedades completas.</p>
+        <p><strong>b)</strong> Crie 3 universidades brasileiras.</p>
+        <p><strong>c)</strong> Crie relacionamentos de amizade entre pelo menos 3 pares de pessoas.</p>
+        <p><strong>d)</strong> Crie relacionamentos de ESTUDA_EM conectando pessoas às universidades.</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 3.2 - Consultas Básicas</h4>
+        <span class="badge badge-easy">Fácil</span>
+        <p><strong>a)</strong> Liste todas as pessoas que estudam na "Universidade de Vassouras".</p>
+        <p><strong>b)</strong> Encontre todos os amigos de uma pessoa específica.</p>
+        <p><strong>c)</strong> Liste todos os cursos da área de "Tecnologia".</p>
+        <p><strong>d)</strong> Conte quantas pessoas existem no grafo.</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 3.3 - Padrões e Caminhos</h4>
+        <span class="badge badge-medium">Médio</span>
+        <p><strong>a)</strong> Encontre amigos em comum entre duas pessoas específicas.</p>
+        <p><strong>b)</strong> Liste todas as pessoas que estudam na mesma universidade que uma pessoa específica.</p>
+        <p><strong>c)</strong> Encontre o caminho mais curto entre duas pessoas através de amizades.</p>
+        <p><strong>d)</strong> Liste pessoas que são amigas de amigos (2º grau) mas não são amigas diretas.</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 3.4 - Análise de Rede Social</h4>
+        <span class="badge badge-medium">Médio</span>
+        <p><strong>a)</strong> Quem tem mais amigos na rede? (ranking de popularidade)</p>
+        <p><strong>b)</strong> Encontre "influenciadores": pessoas com muitas conexões que conectam grupos diferentes.</p>
+        <p><strong>c)</strong> Identifique comunidades: grupos de pessoas da mesma universidade que são amigas entre si.</p>
+        <p><strong>d)</strong> Calcule o grau médio de separação na rede (média de passos entre quaisquer duas pessoas).</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 3.5 - Rede Acadêmica</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <p><strong>a)</strong> Encontre pesquisadores que publicaram artigos juntos (coautores).</p>
+        <p><strong>b)</strong> Liste artigos mais citados e seus autores.</p>
+        <p><strong>c)</strong> Encontre cadeias de citações: Artigo A cita B, que cita C, etc.</p>
+        <p><strong>d)</strong> Identifique orientadores mais prolíficos (que têm mais orientandos que também publicam).</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 3.6 - Sistema de Recomendação</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <p>Crie consultas para um sistema de recomendação:</p>
+        <p><strong>a)</strong> Recomendar amigos: pessoas que têm muitos amigos em comum mas ainda não são amigos.</p>
+        <p><strong>b)</strong> Recomendar cursos: baseado nos cursos que amigos estão fazendo.</p>
+        <p><strong>c)</strong> Recomendar artigos para ler: baseado em citações de artigos que você publicou.</p>
+        <p><strong>d)</strong> Recomendar orientadores: professores que orientam alunos similares a você.</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 3.7 - Desafio Final Neo4j</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <p>Implemente uma análise completa de rede social:</p>
+        <ol>
+          <li>Identifique os 5 nós mais centrais (maior número de conexões)</li>
+          <li>Encontre clusters/comunidades (grupos densamente conectados)</li>
+          <li>Detecte "pontes" (pessoas que conectam comunidades diferentes)</li>
+          <li>Calcule métricas de rede:
+            <ul>
+              <li>Densidade da rede</li>
+              <li>Coeficiente de clustering</li>
+              <li>Diâmetro da rede</li>
+            </ul>
+          </li>
+          <li>Visualize o grafo destacando comunidades com cores diferentes</li>
+        </ol>
+        <div class="tip">
+          💡 <strong>Dica:</strong> Use algoritmos da biblioteca GDS (Graph Data Science) do Neo4j para cálculos avançados.
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE 4: EXERCÍCIOS COMPARATIVOS -->
+    <div id="parte4" class="section">
+      <h2>⚖️ Parte 4: Exercícios Comparativos e Integrados</h2>
+      
+      <div class="exercise">
+        <h4>Exercício 4.1 - Mesma Consulta, Dois Bancos</h4>
+        <span class="badge badge-medium">Médio</span>
+        <span class="badge badge-both">MongoDB + Neo4j</span>
+        <p>Para o cenário de um sistema universitário, implemente a mesma consulta nos dois bancos:</p>
+        <p><strong>"Encontre todos os alunos que cursam Engenharia, moram em Saquarema e têm amigos que cursam Medicina"</strong></p>
+        <p><strong>a)</strong> Escreva a consulta em MongoDB (usando $lookup).</p>
+        <p><strong>b)</strong> Escreva a consulta em Neo4j (usando MATCH com padrões).</p>
+        <p><strong>c)</strong> Compare a complexidade e legibilidade de cada solução.</p>
+        <p><strong>d)</strong> Qual banco seria mais performático para esta consulta? Por quê?</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 4.2 - Arquitetura Híbrida</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <span class="badge badge-both">MongoDB + Neo4j</span>
+        <p>Projete uma arquitetura que usa ambos os bancos para um sistema de e-commerce com rede social:</p>
+        <p><strong>MongoDB armazenará:</strong></p>
+        <ul>
+          <li>Produtos (nome, descrição, preço, estoque, imagens, avaliações)</li>
+          <li>Pedidos (itens, valores, endereço de entrega, status)</li>
+          <li>Usuários (dados cadastrais, histórico de compras)</li>
+        </ul>
+        <p><strong>Neo4j armazenará:</strong></p>
+        <ul>
+          <li>Relacionamentos sociais (amizades, seguidores)</li>
+          <li>Similaridade entre produtos</li>
+          <li>Padrões de compra (usuários que compraram X também compraram Y)</li>
+        </ul>
+        <p><strong>Desafios:</strong></p>
+        <p><strong>a)</strong> Como sincronizar IDs entre os dois bancos?</p>
+        <p><strong>b)</strong> Implemente uma consulta de recomendação que use dados dos dois bancos.</p>
+        <p><strong>c)</strong> Como você lidaria com consistência de dados?</p>
+        <p><strong>d)</strong> Desenhe o fluxo de uma operação de "compra" que atualiza ambos os bancos.</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 4.3 - Migração de Dados</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <span class="badge badge-both">MongoDB + Neo4j</span>
+        <p>Você precisa migrar parte dos dados de um sistema que usa apenas MongoDB para incluir também Neo4j:</p>
+        <p><strong>a)</strong> Escreva um script Python que:</p>
+        <ul>
+          <li>Lê documentos de uma coleção MongoDB</li>
+          <li>Transforma os dados para o modelo de grafo</li>
+          <li>Insere nós e relacionamentos no Neo4j</li>
+        </ul>
+        <p><strong>b)</strong> Como você trataria documentos aninhados do MongoDB?</p>
+        <p><strong>c)</strong> Como garantir que a migração não crie duplicatas?</p>
+        <p><strong>d)</strong> Implemente validações e rollback em caso de erro.</p>
+      </div>
+
+      <div class="exercise">
+        <h4>Exercício 4.4 - Análise de Performance</h4>
+        <span class="badge badge-hard">Difícil</span>
+        <span class="badge badge-both">MongoDB + Neo4j</span>
+        <p>Realize testes de performance comparativos:</p>
+        <p><strong>a)</strong> Meça o tempo de execução das seguintes operações em ambos os bancos:</p>
+        <ol>
+          <li>Inserir 10.000 registros</li>
+          <li>Busca simples por ID</li>
+          <li>Busca com 3 níveis de relacionamento/lookup</li>
+          <li>Agregação com GROUP BY</li>
+          <li>Atualização em massa</li>
+        </ol>
+        <p><strong>b)</strong> Crie gráficos comparativos dos resultados.</p>
+        <p><strong>c)</strong> Explique as diferenças de performance encontradas.</p>
+        <p><strong>d)</strong> Proponha otimizações para cada banco.</p>
+      </div>
+    </div>
+
+    <!-- GABARITO -->
+    <div id="gabarito" class="section">
+      <h2>✅ Gabarito e Explicações</h2>
+      
+      <h3>Parte 1: Questões Teóricas</h3>
+      
+      <div class="theory-question">
+        <h4>Resposta - Questão 1</h4>
+        <p><strong>a)</strong> Bancos SQL usam estrutura tabular rígida com schemas fixos e relacionamentos via chaves estrangeiras. NoSQL permite estruturas flexíveis, escalabilidade horizontal e diferentes modelos de dados.</p>
+        <p><strong>b)</strong> Categorias NoSQL:</p>
+        <ul>
+          <li><strong>Documentos:</strong> MongoDB, CouchDB</li>
+          <li><strong>Chave-Valor:</strong> Redis, DynamoDB</li>
+          <li><strong>Colunar:</strong> Cassandra, HBase</li>
+          <li><strong>Grafos:</strong> Neo4j, ArangoDB</li>
+        </ul>
+        <p><strong>c)</strong> MongoDB é orientado a documentos e Neo4j é orientado a grafos.</p>
+      </div>
+
+      <div class="theory-question">
+        <h4>Resposta - Questão 2</h4>
+        <p><strong>a)</strong> Documento é um conjunto de pares chave-valor estruturado em JSON/BSON, similar a um objeto.</p>
+        <p><strong>b)</strong> Coleção agrupa documentos mas não impõe estrutura rígida; tabela SQL requer schema fixo.</p>
+        <p><strong>c)</strong> Schema flexível significa que documentos na mesma coleção podem ter campos diferentes.</p>
+      </div>
+
+      <h3>Parte 2: MongoDB - Exemplos de Solução</h3>
+
+      <div class="exercise">
+        <h4>Solução - Exercício 2.1</h4>
+        <pre><code class="code-comment">// a) Livros de Ficção Científica após 2010</code>
+<code>db.livros.find({
+  genero: "Ficção Científica",
+  ano_publicacao: { $gt: 2010 }
+})</code></pre>
+
+        <pre><code class="code-comment">// b) Usuários de Saquarema</code>
+<code>db.usuarios.find({
+  "endereco.cidade": "Saquarema"
+})</code></pre>
+
+        <pre><code class="code-comment">// c) Contar livros disponíveis</code>
+<code>db.livros.countDocuments({
+  disponivel: true
+})</code></pre>
+
+        <pre><code class="code-comment">// d) 10 livros mais recentes</code>
+<code>db.livros.find()
+  .sort({ ano_publicacao: -1 })
+  .limit(10)</code></pre>
+      </div>
+
+      <div class="exercise">
+        <h4>Solução - Exercício 2.2</h4>
+        <pre><code class="code-comment">// a) Livros por gênero</code>
+<code>db.livros.aggregate([
+  { $group: { 
+      _id: "$genero", 
+      total: { $sum: 1 } 
+  }},
+  { $sort: { total: -1 } }
+])</code></pre>
+
+        <pre><code class="code-comment">// b) Média de páginas por editora</code>
+<code>db.livros.aggregate([
+  { $group: { 
+      _id: "$editora", 
+      media_paginas: { $avg: "$paginas" } 
+  }},
+  { $sort: { media_paginas: -1 } }
+])</code></pre>
+
+        <pre><code class="code-comment">// c) Autores com mais de 3 livros</code>
+<code>db.livros.aggregate([
+  { $group: { 
+      _id: "$autor", 
+      total_livros: { $sum: 1 } 
+  }},
+  { $match: { total_livros: { $gt: 3 } }},
+  { $sort: { total_livros: -1 } }
+])</code></pre>
+      </div>
+
+      <div class="exercise">
+        <h4>Solução - Exercício 2.3</h4>
+        <pre><code class="code-comment">// a) Empréstimos ativos com dados completos</code>
+<code>db.emprestimos.aggregate([
+  { $match: { status: "ativo" }},
+  { $lookup: {
+      from: "usuarios",
+      localField: "usuario_id",
+      foreignField: "_id",
+      as: "usuario"
+  }},
+  { $lookup: {
+      from: "livros",
+      localField: "livro_id",
+      foreignField: "_id",
+      as: "livro"
+  }},
+  { $unwind: "$usuario" },
+  { $unwind: "$livro" }
+])</code></pre>
+
+        <pre><code class="code-comment">// b) Top 5 usuários que mais emprestaram</code>
+<code>db.emprestimos.aggregate([
+  { $group: {
+      _id: "$usuario_id",
+      total_emprestimos: { $sum: 1 }
+  }},
+  { $sort: { total_emprestimos: -1 }},
+  { $limit: 5 },
+  { $lookup: {
+      from: "usuarios",
+      localField: "_id",
+      foreignField: "_id",
+      as: "usuario"
+  }},
+  { $unwind: "$usuario" }
+])</code></pre>
+
+        <pre><code class="code-comment">// c) Livros nunca emprestados</code>
+<code>db.livros.aggregate([
+  { $lookup: {
+      from: "emprestimos",
+      localField: "_id",
+      foreignField: "livro_id",
+      as: "emprestimos"
+  }},
+  { $match: { emprestimos: { $size: 0 } }},
+  { $project: { emprestimos: 0 }}
+])</code></pre>
+      </div>
+
+      <h3>Parte 3: Neo4j - Exemplos de Solução</h3>
+
+      <div class="exercise">
+        <h4>Solução - Exercício 3.1</h4>
+        <pre><code class="code-comment">// a) Criar 5 pessoas</code>
+<code>CREATE 
+  (p1:Pessoa {nome: "Ana Silva", idade: 22, email: "ana@email.com", cidade: "Saquarema"}),
+  (p2:Pessoa {nome: "Bruno Costa", idade: 24, email: "bruno@email.com", cidade: "Rio de Janeiro"}),
+  (p3:Pessoa {nome: "Carla Santos", idade: 21, email: "carla@email.com", cidade: "Niterói"}),
+  (p4:Pessoa {nome: "Diego Ramos", idade: 35, email: "diego@email.com", cidade: "Saquarema"}),
+  (p5:Pessoa {nome: "Elena Souza", idade: 23, email: "elena@email.com", cidade: "Cabo Frio"})</code></pre>
+
+        <pre><code class="code-comment">// b) Criar 3 universidades</code>
+<code>CREATE
+  (u1:Universidade {nome: "Universidade de Vassouras", cidade: "Saquarema", ranking: 15}),
+  (u2:Universidade {nome: "UFRJ", cidade: "Rio de Janeiro", ranking: 1}),
+  (u3:Universidade {nome: "UFF", cidade: "Niterói", ranking: 5})</code></pre>
+
+        <pre><code class="code-comment">// c) Criar amizades</code>
+<code>MATCH 
+  (p1:Pessoa {nome: "Ana Silva"}),
+  (p2:Pessoa {nome: "Bruno Costa"}),
+  (p3:Pessoa {nome: "Carla Santos"})
+CREATE 
+  (p1)-[:AMIGO_DE {desde: 2020}]->(p2),
+  (p2)-[:AMIGO_DE {desde: 2021}]->(p3),
+  (p1)-[:AMIGO_DE {desde: 2019}]->(p3)</code></pre>
+      </div>
+
+      <div class="exercise">
+        <h4>Solução - Exercício 3.2</h4>
+        <pre><code class="code-comment">// a) Pessoas que estudam na Universidade de Vassouras</code>
+<code>MATCH (p:Pessoa)-[:ESTUDA_EM]->(u:Universidade {nome: "Universidade de Vassouras"})
+RETURN p.nome, p.email</code></pre>
+
+        <pre><code class="code-comment">// b) Amigos de uma pessoa</code>
+<code>MATCH (p:Pessoa {nome: "Ana Silva"})-[:AMIGO_DE]-(amigo:Pessoa)
+RETURN amigo.nome, amigo.cidade</code></pre>
+
+        <pre><code class="code-comment">// c) Cursos de Tecnologia</code>
+<code>MATCH (c:Curso {area: "Tecnologia"})
+RETURN c.nome, c.duracao_anos</code></pre>
+
+        <pre><code class="code-comment">// d) Contar pessoas</code>
+<code>MATCH (p:Pessoa)
+RETURN count(p) AS total_pessoas</code></pre>
+      </div>
+
+      <div class="exercise">
+        <h4>Solução - Exercício 3.3</h4>
+        <pre><code class="code-comment">// a) Amigos em comum</code>
+<code>MATCH (p1:Pessoa {nome: "Ana Silva"})-[:AMIGO_DE]-(comum:Pessoa)-[:AMIGO_DE]-(p2:Pessoa {nome: "Carla Santos"})
+WHERE p1 <> p2
+RETURN comum.nome, comum.cidade</code></pre>
+
+        <pre><code class="code-comment">// b) Colegas de universidade</code>
+<code>MATCH (p1:Pessoa {nome: "Ana Silva"})-[:ESTUDA_EM]->(u:Universidade)<-[:ESTUDA_EM]-(p2:Pessoa)
+WHERE p1 <> p2
+RETURN p2.nome, u.nome AS universidade</code></pre>
+
+        <pre><code class="code-comment">// c) Caminho mais curto</code>
+<code>MATCH path = shortestPath(
+  (p1:Pessoa {nome: "Ana Silva"})-[:AMIGO_DE*]-(p2:Pessoa {nome: "Elena Souza"})
+)
+RETURN path, length(path) AS grau_separacao</code></pre>
+
+        <pre><code class="code-comment">// d) Amigos de amigos (2º grau)</code>
+<code>MATCH (eu:Pessoa {nome: "Ana Silva"})-[:AMIGO_DE]-(amigo)-[:AMIGO_DE]-(amigo2:Pessoa)
+WHERE NOT (eu)-[:AMIGO_DE]-(amigo2) AND eu <> amigo2
+RETURN DISTINCT amigo2.nome, count(amigo) AS amigos_em_comum
+ORDER BY amigos_em_comum DESC</code></pre>
+      </div>
+
+      <div class="exercise">
+        <h4>Solução - Exercício 3.4</h4>
+        <pre><code class="code-comment">// a) Ranking de popularidade</code>
+<code>MATCH (p:Pessoa)-[:AMIGO_DE]-(amigo:Pessoa)
+RETURN p.nome, count(amigo) AS total_amigos
+ORDER BY total_amigos DESC
+LIMIT 10</code></pre>
+
+        <pre><code class="code-comment">// c) Comunidades (mesma universidade e amigos)</code>
+<code>MATCH (p1:Pessoa)-[:ESTUDA_EM]->(u:Universidade)<-[:ESTUDA_EM]-(p2:Pessoa)
+WHERE (p1)-[:AMIGO_DE]-(p2)
+RETURN u.nome AS universidade, 
+       collect(DISTINCT p1.nome) AS membros,
+       count(*) AS conexoes
+ORDER BY conexoes DESC</code></pre>
+      </div>
+
+      <h3>Parte 4: Exercícios Comparativos</h3>
+
+      <div class="exercise">
+        <h4>Solução - Exercício 4.1</h4>
+        <p><strong>MongoDB:</strong></p>
+        <pre><code>db.alunos.aggregate([
+  { $match: { "endereco.cidade": "Saquarema" }},
+  { $lookup: {
+      from: "cursos",
+      localField: "curso_id",
+      foreignField: "_id",
+      as: "curso"
+  }},
+  { $unwind: "$curso" },
+  { $match: { "curso.nome": /Engenharia/i }},
+  { $lookup: {
+      from: "amizades",
+      localField: "_id",
+      foreignField: "aluno_id",
+      as: "amigos"
+  }},
+  { $lookup: {
+      from: "alunos",
+      localField: "amigos.amigo_id",
+      foreignField: "_id",
+      as: "dados_amigos"
+  }},
+  { $lookup: {
+      from: "cursos",
+      localField: "dados_amigos.curso_id",
+      foreignField: "_id",
+      as: "cursos_amigos"
+  }},
+  { $match: { "cursos_amigos.nome": /Medicina/i }}
+])</code></pre>
+
+        <p><strong>Neo4j:</strong></p>
+        <pre><code>MATCH (aluno:Pessoa)-[:CURSA]->(c1:Curso)
+WHERE aluno.cidade = "Saquarema" AND c1.nome =~ ".*Engenharia.*"
+MATCH (aluno)-[:AMIGO_DE]-(amigo:Pessoa)-[:CURSA]->(c2:Curso)
+WHERE c2.nome =~ ".*Medicina.*"
+RETURN DISTINCT aluno.nome, aluno.email</code></pre>
+
+        <p><strong>Análise:</strong> A consulta Neo4j é mais concisa e legível. MongoDB requer múltiplos $lookup e é mais verboso. Neo4j é mais performático para consultas de relacionamentos complexos.</p>
+      </div>
+
+      <div class="warning">
+        ⚠️ <strong>Importante:</strong> Este gabarito apresenta apenas soluções exemplares. Existem múltiplas formas corretas de resolver cada exercício. O importante é a lógica aplicada e o entendimento dos conceitos!
+      </div>
+    </div>
+
+    <!-- RECURSOS ADICIONAIS -->
+    <div class="section">
+      <h2>📖 Recursos para Estudo</h2>
+      
+      <h3>MongoDB</h3>
+      <ul>
+        <li><strong>Documentação Oficial:</strong> <a href="https://docs.mongodb.com" target="_blank" style="color: #00ffaa;">docs.mongodb.com</a></li>
+        <li><strong>MongoDB University:</strong> Cursos gratuitos online</li>
+        <li><strong>Aggregation Pipeline Builder:</strong> Ferramenta visual no Compass</li>
+      </ul>
+
+      <h3>Neo4j</h3>
+      <ul>
+        <li><strong>Documentação Oficial:</strong> <a href="https://neo4j.com/docs" target="_blank" style="color: #00ffaa;">neo4j.com/docs</a></li>
+        <li><strong>GraphAcademy:</strong> Cursos gratuitos e certificações</li>
+        <li><strong>Neo4j Browser:</strong> Interface visual (localhost:7474)</li>
+        <li><strong>Cypher Refcard:</strong> Guia rápido de referência</li>
+      </ul>
+
+      <h3>Práticas Recomendadas</h3>
+      <ul>
+        <li>✅ Use o MongoDB Compass para visualizar documentos</li>
+        <li>✅ Use o Neo4j Browser para visualizar grafos</li>
+        <li>✅ Teste consultas em ambientes de desenvolvimento primeiro</li>
+        <li>✅ Sempre crie índices para propriedades frequentemente consultadas</li>
+        <li>✅ Documente sua modelagem de dados</li>
+        <li>✅ Use parâmetros em consultas para evitar injection</li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      <p><strong>📚 Disciplina:</strong> Banco de Dados Não Relacional</p>
+      <p><strong>👨‍🏫 Professor:</strong> Diego Ramos Inácio</p>
+      <p><strong>🎓 Instituição:</strong> Universidade de Vassouras - Campus Saquarema</p>
+      <p style="margin-top: 1rem; color: #60d9ff;">
+        💡 <em>Dúvidas? Pratique no MongoDB Atlas (cloud.mongodb.com) e Neo4j Sandbox (sandbox.neo4j.com)</em>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
