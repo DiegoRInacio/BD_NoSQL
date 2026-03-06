@@ -242,6 +242,54 @@
         .example strong {
             color: #856404;
         }
+
+        .miro-link-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, #f0f4ff, #e8f0fe);
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 20px 25px;
+            margin-top: 25px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .miro-link-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            background: linear-gradient(135deg, #e8f0fe, #dce8fd);
+        }
+
+        .miro-icon {
+            font-size: 2.2em;
+            flex-shrink: 0;
+        }
+
+        .miro-text {
+            flex: 1;
+        }
+
+        .miro-text strong {
+            display: block;
+            color: #4a5bba;
+            font-size: 1.1em;
+            margin-bottom: 4px;
+        }
+
+        .miro-text span {
+            color: #7f8c8d;
+            font-size: 0.88em;
+            word-break: break-all;
+        }
+
+        .miro-arrow {
+            font-size: 1.4em;
+            color: #667eea;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -615,6 +663,16 @@ WHERE p.nome = 'João' RETURN amigo.nome
                     </tr>
                 </tbody>
             </table>
+
+            <!-- Miro Link -->
+            <a class="miro-link-box" href="https://miro.com/welcomeonboard/NzVkNzArNmxrcWFXYVY0elNzWlNkai92QTg2d3lkaWwreU5VcDhtcjJadzNZQ05rQURZMHBSMjd1K0RGRkRGRmxGMjM5c3NOZzU1UmJnQjdWeitwbUg0R3JUeE9WMkxxL1hOdzZIQjFpa012UjFaV0tjNEF6T3cxeTdxK05ERnFyVmtkMG5hNDA3dVlncnBvRVB2ZXBnPT0hdjE=?share_link_id=278366183414" target="_blank" rel="noopener noreferrer">
+                <div class="miro-icon">🗂️</div>
+                <div class="miro-text">
+                    <strong>Acesse o quadro no Miro</strong>
+                    <span>miro.com · Clique para abrir o board colaborativo</span>
+                </div>
+                <div class="miro-arrow">→</div>
+            </a>
         </div>
     </div>
 
