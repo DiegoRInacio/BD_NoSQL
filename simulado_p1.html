@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado P1 — Banco de Dados NoSQL</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        /* ── TELA INICIAL ─────────────────────────────────────────────── */
+        #tela-inicio {
+            background: rgba(255,255,255,0.97);
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        #tela-inicio h1 {
+            font-size: 2.4rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        #tela-inicio .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.2rem;
+            border-top: 4px solid #667eea;
+        }
+
+        .info-card .num {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .info-card p {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-top: 0.3rem;
+        }
+
+        .aulas-lista {
+            text-align: left;
+            background: #f0f4ff;
+            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .aulas-lista h3 {
+            color: #2c3e50;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+        }
+
+        .aulas-lista ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+        }
+
+        .aulas-lista li {
+            color: #555;
+            font-size: 0.9rem;
+            padding: 0.3rem 0;
+        }
+
+        .aulas-lista li::before {
+            content: "▸ ";
+            color: #667eea;
+        }
+
+        /* ── QUIZ ─────────────────────────────────────────────────────── */
+        #tela-quiz { display: none; }
+
+        .quiz-header {
+            background: rgba(255,255,255,0.97);
+            border-radius: 16px;
+            padding: 1.2rem 1.8rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .quiz-header .prog-info {
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .quiz-header .prog-info strong {
+            color: #667eea;
+        }
+
+        .timer {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #f0f4ff;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+        }
+
+        .timer.urgente { color: #e74c3c; animation: piscar 1s infinite; }
+
+        @keyframes piscar { 50% { opacity: 0.5; } }
+
+        .progress-bar-wrap {
+            width: 100%;
+            background: #e9ecef;
+            border-radius: 30px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 30px;
+            transition: width 0.4s ease;
+        }
+
+        /* Indicadores de questão */
+        .indicators {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 1.2rem;
+        }
+
+        .ind {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            background: rgba(255,255,255,0.6);
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid rgba(255,255,255,0.4);
+        }
+
+        .ind.atual    { background: #667eea; color: white; border-color: #667eea; }
+        .ind.correto  { background: #27ae60; color: white; border-color: #27ae60; }
+        .ind.errado   { background: #e74c3c; color: white; border-color: #e74c3c; }
+        .ind.respondida { background: #95a5a6; color: white; border-color: #95a5a6; }
+
+        /* Card da questão */
+        .card-questao {
+            background: rgba(255,255,255,0.97);
+            border-radius: 20px;
+            padding: 2rem 2.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        }
+
+        .badge-aula {
+            display: inline-block;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.3rem 0.9rem;
+            border-radius: 20px;
+            margin-bottom: 1rem;
+        }
+
+        .badge-tipo {
+            display: inline-block;
+            background: #f0f4ff;
+            color: #667eea;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.3rem 0.9rem;
+            border-radius: 20px;
+            margin-bottom: 1rem;
+            margin-left: 6px;
+        }
+
+        .enunciado {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+
+        pre.codigo-contexto {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            border-radius: 10px;
+            padding: 1rem 1.3rem;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-left: 4px solid #667eea;
+        }
+
+        /* Opções */
+        .opcoes { display: flex; flex-direction: column; gap: 0.8rem; }
+
+        .opcao {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 1.2rem;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+
+        .opcao:hover:not(.bloqueada) {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateX(4px);
+        }
+
+        .opcao .letra {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .opcao .texto {
+            font-size: 0.95rem;
+            color: #2c3e50;
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .opcao pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            overflow-x: auto;
+            margin-top: 0.5rem;
+        }
+
+        /* estados de resposta */
+        .opcao.selecionada { border-color: #667eea; background: #eef1ff; }
+        .opcao.selecionada .letra { background: #667eea; color: white; }
+
+        .opcao.correta  { border-color: #27ae60 !important; background: #eafaf1 !important; }
+        .opcao.correta  .letra { background: #27ae60 !important; color: white !important; }
+
+        .opcao.errada   { border-color: #e74c3c !important; background: #fdf3f3 !important; }
+        .opcao.errada   .letra { background: #e74c3c !important; color: white !important; }
+
+        .opcao.bloqueada { cursor: default; }
+
+        /* Feedback */
+        .feedback {
+            display: none;
+            margin-top: 1.2rem;
+            padding: 1rem 1.3rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .feedback.ok  { background: #eafaf1; border-left: 4px solid #27ae60; color: #1e8449; }
+        .feedback.nok { background: #fdf3f3; border-left: 4px solid #e74c3c; color: #922b21; }
+
+        /* Botões de navegação */
+        .nav-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.8rem;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.8rem;
+            border: none;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary { background: #ecf0f1; color: #555; }
+        .btn-secondary:hover { background: #dfe6e9; }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover { transform: scale(1.04); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-primary:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+        .btn-start {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem 3rem;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            margin-top: 1.5rem;
+        }
+
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(102,126,234,0.45); }
+
+        /* ── TELA DE RESULTADO ────────────────────────────────────────── */
+        #tela-resultado {
+            display: none;
+            background: rgba(255,255,255,0.97);
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        #tela-resultado h2 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .nota-display {
+            font-size: 5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 1rem 0;
+            line-height: 1;
+        }
+
+        .conceito {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .resultado-detalhe {
+            color: #7f8c8d;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .res-por-aula {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .res-aula-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1rem;
+            border-top: 4px solid #667eea;
+        }
+
+        .res-aula-card .titulo-aula { font-size: 0.8rem; color: #6c757d; margin-bottom: 0.4rem; }
+        .res-aula-card .acertos-aula { font-size: 1.5rem; font-weight: bold; color: #2c3e50; }
+
+        .gabarito-section {
+            text-align: left;
+            margin-top: 2rem;
+        }
+
+        .gabarito-section h3 {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .gabarito-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            padding: 0.7rem 0;
+            border-bottom: 1px solid #f1f3f5;
+            font-size: 0.9rem;
+        }
+
+        .gabarito-item .qi { min-width: 28px; font-weight: bold; color: #667eea; }
+
+        .gabarito-item .resultado-icon { min-width: 24px; text-align: center; }
+
+        .gabarito-item .enun-resumo { color: #2c3e50; flex: 1; }
+
+        .gabarito-item .resp-info { font-size: 0.8rem; color: #6c757d; margin-top: 0.2rem; }
+
+        @media (max-width: 600px) {
+            .card-questao { padding: 1.3rem 1.2rem; }
+            #tela-inicio { padding: 2rem 1.2rem; }
+            .aulas-lista ul { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ─── TELA INICIAL ─────────────────────────────────────────────────────── -->
+<div class="container">
+<div id="tela-inicio">
+    <h1>Simulado P1</h1>
+    <p class="subtitle">Banco de Dados Não Relacional — NoSQL</p>
+
+    <div class="info-grid">
+        <div class="info-card"><div class="num">20</div><p>Questões</p></div>
+        <div class="info-card"><div class="num">40</div><p>Minutos</p></div>
+        <div class="info-card"><div class="num">5</div><p>Aulas cobertas</p></div>
+        <div class="info-card"><div class="num">10</div><p>Pontos máximos</p></div>
+    </div>
+
+    <div class="aulas-lista">
+        <h3>Conteúdo abordado</h3>
+        <ul>
+            <li><strong>Aula 01</strong> — História, CAP, ACID vs BASE, Taxonomia</li>
+            <li><strong>Aula 02</strong> — Evolução dos BDs, SQL vs NoSQL</li>
+            <li><strong>Aula 03</strong> — CRUD MongoDB (mongosh + PyMongo)</li>
+            <li><strong>Aula 04</strong> — CRUD Avançado, Agregações, Índices</li>
+            <li><strong>Aula 05</strong> — $lookup, Relacionamentos, Pipeline</li>
+        </ul>
+    </div>
+
+    <p style="color:#7f8c8d;font-size:0.9rem;">Cada questão correta vale <strong>0,5 ponto</strong>. Você pode revisar as questões antes de finalizar.</p>
+
+    <button class="btn-start" onclick="iniciarSimulado()">Iniciar Simulado</button>
+
+    <p style="margin-top:1.5rem;font-size:0.8rem;color:#aaa;">Prof. Mesc. Diego Ramos Inácio · Univassouras · 2025.2</p>
+</div>
+
+<!-- ─── TELA DO QUIZ ──────────────────────────────────────────────────────── -->
+<div id="tela-quiz">
+    <div class="quiz-header">
+        <div class="prog-info">
+            Questão <strong id="num-atual">1</strong> de <strong>20</strong>
+        </div>
+        <div class="timer" id="timer-display">40:00</div>
+        <div style="width:100%">
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="progress-bar" style="width:5%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="indicators" id="indicators"></div>
+
+    <div class="card-questao" id="card-questao"></div>
+</div>
+
+<!-- ─── TELA DE RESULTADO ────────────────────────────────────────────────── -->
+<div id="tela-resultado">
+    <h2 id="res-titulo"></h2>
+    <div class="nota-display" id="res-nota"></div>
+    <div class="conceito" id="res-conceito"></div>
+    <div class="resultado-detalhe" id="res-detalhe"></div>
+
+    <div class="res-por-aula" id="res-por-aula"></div>
+
+    <div class="gabarito-section">
+        <h3>Gabarito detalhado</h3>
+        <div id="gabarito-lista"></div>
+    </div>
+
+    <div style="margin-top:2rem;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="location.reload()">Refazer Simulado</button>
+        <button class="btn btn-primary" onclick="window.location.href='index.html'">Voltar ao Portal</button>
+    </div>
+
+    <p style="margin-top:2rem;font-size:0.8rem;color:#aaa;">Prof. Mesc. Diego Ramos Inácio · Univassouras · 2025.2</p>
+</div>
+</div>
+
+<script>
+// ─── BANCO DE QUESTÕES ────────────────────────────────────────────────────────
+const questoes = [
+  // ── AULA 01 ──────────────────────────────────────────────────────────────
+  {
+    aula: "Aula 01",
+    tipo: "Conceito",
+    enunciado: "Sobre o Teorema CAP, qual das afirmativas está <strong>CORRETA</strong>?",
+    opcoes: [
+      "Um sistema distribuído pode garantir Consistência, Disponibilidade e Tolerância a Partições ao mesmo tempo.",
+      "Em caso de partição de rede, o sistema precisa escolher entre Consistência (C) e Disponibilidade (A).",
+      "O CAP Theorem se aplica exclusivamente a bancos de dados relacionais.",
+      "Tolerância a Partições é um requisito opcional em sistemas distribuídos modernos."
+    ],
+    correta: 1,
+    feedback: "O Teorema CAP afirma que, em um sistema distribuído, não é possível garantir C, A e P ao mesmo tempo. Quando ocorre uma partição de rede, o sistema deve optar por manter Consistência (recusar leituras/escritas) ou Disponibilidade (responder mesmo com dados possivelmente desatualizados)."
+  },
+  {
+    aula: "Aula 01",
+    tipo: "Conceito",
+    enunciado: "Qual das opções descreve <strong>corretamente</strong> o modelo BASE adotado pelos sistemas NoSQL?",
+    opcoes: [
+      "Basically Available, Structured, Eventually consistent",
+      "Backup Available, Stable state, Eventually consistent",
+      "Basically Available, Soft state, Eventually consistent",
+      "Basically Available, Strong state, Eventually consistent"
+    ],
+    correta: 2,
+    feedback: "BASE é o acrônimo de Basically Available (sistema permanece disponível), Soft state (estado pode mudar ao longo do tempo mesmo sem entradas) e Eventually consistent (consistência é alcançada eventualmente). É o contraponto ao modelo ACID dos bancos relacionais."
+  },
+  {
+    aula: "Aula 01",
+    tipo: "Caso de uso",
+    enunciado: "Uma plataforma de recomendação precisa mapear relacionamentos entre usuários e produtos, percorrendo caminhos de conexões para identificar padrões. Qual tipo de banco NoSQL é <strong>mais indicado</strong>?",
+    opcoes: [
+      "Chave-Valor (ex.: Redis) — alto desempenho em cache",
+      "Colunas (ex.: Cassandra) — otimizado para séries temporais",
+      "Documentos (ex.: MongoDB) — esquema flexível",
+      "Grafos (ex.: Neo4j) — consultas de caminhos e relacionamentos"
+    ],
+    correta: 3,
+    feedback: "Bancos de Grafos como Neo4j são ideais para representar e consultar relacionamentos complexos. A estrutura de nós e arestas permite percorrer conexões (amigos de amigos, recomendações por afinidade) de forma muito mais eficiente do que JOINs em tabelas relacionais."
+  },
+  {
+    aula: "Aula 01",
+    tipo: "Conceito",
+    enunciado: "Em qual dos cenários abaixo o banco de dados <strong>relacional</strong> seria a escolha mais adequada em comparação ao NoSQL?",
+    opcoes: [
+      "Catálogo de produtos de e-commerce com atributos variáveis por categoria",
+      "Sistema bancário com transações financeiras que envolvem múltiplas contas",
+      "Plataforma de redes sociais com bilhões de posts gerados por usuários",
+      "Armazenamento de sessões de usuário com expiração automática"
+    ],
+    correta: 1,
+    feedback: "Sistemas financeiros com transações complexas entre múltiplas entidades são casos clássicos onde ACID e integridade referencial do modelo relacional são essenciais. A atomicidade garante que transferências entre contas sejam totais ou não ocorram. As demais opções têm boa aderência ao NoSQL."
+  },
+
+  // ── AULA 02 ──────────────────────────────────────────────────────────────
+  {
+    aula: "Aula 02",
+    tipo: "Conceito",
+    enunciado: "O termo \"NoSQL\" foi cunhado em qual ano e por quem, de acordo com a linha do tempo apresentada na Aula 02?",
+    opcoes: [
+      "2006, por Eric Schmidt (Google)",
+      "2009, por Eric Evans",
+      "2007, por Jeff Bezos (Amazon)",
+      "2004, por Larry Page (Google)"
+    ],
+    correta: 1,
+    feedback: "O termo \"NoSQL\" foi cunhado por Eric Evans em 2009, para um encontro sobre bancos de dados distribuídos. O significado evoluiu para \"Not Only SQL\" — indicando que esses sistemas não substituem o SQL, mas complementam com outros modelos de armazenamento."
+  },
+  {
+    aula: "Aula 02",
+    tipo: "Conceito",
+    enunciado: "Qual das características abaixo é uma <strong>limitação</strong> reconhecida dos bancos de dados relacionais tradicionais em cenários de grande escala?",
+    opcoes: [
+      "Esquema flexível que permite evolução sem migrações",
+      "Escalabilidade horizontal nativa em múltiplos servidores",
+      "Esquema rígido com dificuldade para mudanças estruturais",
+      "Alta disponibilidade nativa sem necessidade de configuração"
+    ],
+    correta: 2,
+    feedback: "Bancos relacionais possuem esquema rígido (DDL), o que dificulta alterações estruturais em produção e em cenários onde a estrutura dos dados evolui com frequência. Escalabilidade horizontal e alta disponibilidade nativa são características mais associadas aos bancos NoSQL."
+  },
+  {
+    aula: "Aula 02",
+    tipo: "Código",
+    enunciado: "Um desenvolvedor quer buscar no MongoDB todos os usuários com <code>idade &gt; 25</code>. Qual é a consulta <strong>correta</strong> no mongosh?",
+    opcoes: [
+      "SELECT * FROM usuarios WHERE idade > 25",
+      "db.usuarios.find({ idade: { $gt: 25 } })",
+      "db.usuarios.find({ idade: > 25 })",
+      "db.usuarios.select({ idade: { $greater: 25 } })"
+    ],
+    correta: 1,
+    feedback: "No MongoDB, operadores de comparação são prefixados com $. O operador $gt significa \"greater than\" (maior que). A sintaxe correta é { campo: { $gt: valor } }. A opção A é SQL, C é sintaxe inválida, e D usa método select e operador inexistentes."
+  },
+  {
+    aula: "Aula 02",
+    tipo: "Caso de uso",
+    enunciado: "Para armazenar sessões de usuário que expiram automaticamente, com necessidade de acesso em <strong>sub-milissegundos</strong>, qual banco NoSQL seria mais adequado?",
+    opcoes: [
+      "MongoDB — banco de documentos com esquema flexível",
+      "Cassandra — banco de colunas para alta escrita",
+      "Redis — banco chave-valor in-memory",
+      "Neo4j — banco de grafos para relacionamentos"
+    ],
+    correta: 2,
+    feedback: "Redis é um banco chave-valor que armazena dados em memória (in-memory), garantindo latências em sub-milissegundos. Possui suporte nativo a TTL (Time To Live) para expirar chaves automaticamente, tornando-o ideal para sessões, cache e filas de mensagens."
+  },
+
+  // ── AULA 03 ──────────────────────────────────────────────────────────────
+  {
+    aula: "Aula 03",
+    tipo: "Código",
+    enunciado: "Para inserir <strong>múltiplos documentos</strong> de uma só vez na coleção <code>alunos</code>, qual comando é o mais adequado no mongosh?",
+    opcoes: [
+      "db.alunos.insertOne([{nome: \"Ana\"}, {nome: \"João\"}])",
+      "db.alunos.insertMany([{nome: \"Ana\"}, {nome: \"João\"}])",
+      "db.alunos.insert({nome: \"Ana\"}, {nome: \"João\"})",
+      "db.alunos.addMany([{nome: \"Ana\"}, {nome: \"João\"}])"
+    ],
+    correta: 1,
+    feedback: "O método correto é insertMany(), que recebe um array de documentos. insertOne() aceita apenas um documento (não um array de documentos). O método insert() foi depreciado em versões modernas do MongoDB. addMany() não existe."
+  },
+  {
+    aula: "Aula 03",
+    tipo: "Código",
+    enunciado: "Um professor quer <strong>incrementar</strong> a nota de um aluno em 2 pontos, sem sobrescrever o valor atual. Qual operador e comando MongoDB estão <strong>corretos</strong>?",
+    opcoes: [
+      "db.alunos.updateOne({nome: \"João\"}, {$set: {nota: nota+2}})",
+      "db.alunos.updateOne({nome: \"João\"}, {$inc: {nota: 2}})",
+      "db.alunos.updateOne({nome: \"João\"}, {nota: +2})",
+      "db.alunos.updateOne({nome: \"João\"}, {$add: {nota: 2}})"
+    ],
+    correta: 1,
+    feedback: "O operador $inc (increment) é específico para somar (ou subtrair com valor negativo) ao valor atual de um campo numérico. $set definiria um valor fixo. A opção C não é sintaxe válida do MongoDB. $add não existe como operador de update."
+  },
+  {
+    aula: "Aula 03",
+    tipo: "Código",
+    enunciado: "Para remover <strong>apenas o primeiro</strong> documento com <code>status: \"inativo\"</code> da coleção <code>usuarios</code>, qual comando é correto?",
+    opcoes: [
+      "db.usuarios.deleteMany({ status: \"inativo\" })",
+      "db.usuarios.remove({ status: \"inativo\" })",
+      "db.usuarios.deleteOne({ status: \"inativo\" })",
+      "db.usuarios.drop({ status: \"inativo\" })"
+    ],
+    correta: 2,
+    feedback: "deleteOne() remove apenas o primeiro documento que satisfaz o filtro. deleteMany() removeria todos. remove() foi depreciado. drop() remove a coleção inteira (sem aceitar filtros de documentos específicos)."
+  },
+  {
+    aula: "Aula 03",
+    tipo: "Código",
+    enunciado: "Qual consulta retorna produtos com <code>preco</code> entre <strong>10 e 50 (inclusive)</strong>?",
+    opcoes: [
+      "db.produtos.find({ preco: { $gt: 10, $lt: 50 } })",
+      "db.produtos.find({ preco: { $gte: 10, $lte: 50 } })",
+      "db.produtos.find({ preco: [10, 50] })",
+      "db.produtos.find({ preco: { $between: [10, 50] } })"
+    ],
+    correta: 1,
+    feedback: "$gte = \"greater than or equal\" (maior ou igual) e $lte = \"less than or equal\" (menor ou igual). A opção A usa $gt e $lt que excluem os limites. A opção C não é sintaxe válida para range. $between não existe no MongoDB."
+  },
+
+  // ── AULA 04 ──────────────────────────────────────────────────────────────
+  {
+    aula: "Aula 04",
+    tipo: "Código",
+    enunciado: "Qual pipeline de agregação retorna a <strong>média de notas</strong> agrupada por campo <code>curso</code>?",
+    opcoes: [
+      "db.alunos.aggregate([{ $group: { _id: \"$curso\", media: { $avg: \"$nota\" } } }])",
+      "db.alunos.find({ $group: { _id: \"$curso\", media: { $avg: \"$nota\" } } })",
+      "db.alunos.aggregate([{ $match: \"$curso\" }, { $avg: \"$nota\" }])",
+      "db.alunos.groupBy(\"curso\").avg(\"nota\")"
+    ],
+    correta: 0,
+    feedback: "O método aggregate() recebe um array de estágios do pipeline. $group agrupa os documentos por _id (aqui, o campo curso) e $avg calcula a média de nota. O find() não aceita $group. As demais opções são sintaxes inválidas no MongoDB."
+  },
+  {
+    aula: "Aula 04",
+    tipo: "Conceito",
+    enunciado: "Qual afirmação sobre <strong>índices</strong> no MongoDB está <strong>CORRETA</strong>?",
+    opcoes: [
+      "Criar muitos índices sempre melhora o desempenho geral do banco.",
+      "Índices aceleram leituras mas podem impactar negativamente inserções e updates.",
+      "Índices são desnecessários em coleções com menos de 1 milhão de documentos.",
+      "O MongoDB não suporta índices compostos (em múltiplos campos)."
+    ],
+    correta: 1,
+    feedback: "Índices aceleram consultas do tipo find() e sort(), mas cada índice adicional precisa ser mantido durante inserções e updates, aumentando o custo de escrita. A recomendação das boas práticas é indexar campos de consulta frequente e evitar índices desnecessários ou redundantes."
+  },
+  {
+    aula: "Aula 04",
+    tipo: "Código",
+    enunciado: "Em um pipeline de agregação MongoDB, qual estágio deve ser posicionado <strong>primeiro</strong> para obter o melhor desempenho?",
+    opcoes: [
+      "{ $group: ... } — agrupar dados antes de filtrar",
+      "{ $sort: ... } — ordenar antes de processar",
+      "{ $match: ... } — filtrar os documentos relevantes no início",
+      "{ $project: ... } — selecionar campos antes de filtrar"
+    ],
+    correta: 2,
+    feedback: "$match no início do pipeline filtra os documentos antes dos estágios seguintes, reduzindo a quantidade de dados processados. Quando $match aparece antes de $sort ou $group, o MongoDB pode aproveitar índices para a filtragem, melhorando consideravelmente o desempenho."
+  },
+  {
+    aula: "Aula 04",
+    tipo: "Código",
+    enunciado: "Para <strong>remover o valor</strong> <code>\"tecnologia\"</code> do array de <code>tags</code> de um produto, qual operador e comando MongoDB estão corretos?",
+    opcoes: [
+      "db.produtos.updateOne({nome: \"Laptop\"}, {$remove: {tags: \"tecnologia\"}})",
+      "db.produtos.updateOne({nome: \"Laptop\"}, {$pull: {tags: \"tecnologia\"}})",
+      "db.produtos.updateOne({nome: \"Laptop\"}, {$unset: {tags: \"tecnologia\"}})",
+      "db.produtos.updateOne({nome: \"Laptop\"}, {$delete: {tags: \"tecnologia\"}})"
+    ],
+    correta: 1,
+    feedback: "$pull remove de um array todos os elementos que correspondem ao valor ou condição informada. $push adiciona ao array. $unset remove o campo inteiro do documento. $remove e $delete não são operadores de update válidos no MongoDB."
+  },
+
+  // ── AULA 05 ──────────────────────────────────────────────────────────────
+  {
+    aula: "Aula 05",
+    tipo: "Código",
+    enunciado: "Qual é a estrutura <strong>CORRETA</strong> de um estágio <code>$lookup</code> para unir documentos da coleção <code>alunos</code> com dados da coleção <code>cursos</code> pelo campo <code>curso_id</code>?",
+    opcoes: [
+      { code: `{ $lookup: {\n    from: "cursos",\n    localField: "curso_id",\n    foreignField: "_id",\n    as: "curso_info"\n}}` },
+      { code: `{ $join: {\n    collection: "cursos",\n    on: "curso_id",\n    as: "curso_info"\n}}` },
+      { code: `{ $lookup: {\n    collection: "cursos",\n    match: { "curso_id": "_id" },\n    as: "curso_info"\n}}` },
+      { code: `{ $lookup: {\n    from: "cursos",\n    using: "curso_id",\n    as: "curso_info"\n}}` }
+    ],
+    correta: 0,
+    feedback: "O $lookup correto usa os campos: from (coleção externa), localField (campo no documento atual), foreignField (campo na coleção externa) e as (nome do array resultante). $join não existe no MongoDB. As opções C e D usam parâmetros incorretos (collection, match, using)."
+  },
+  {
+    aula: "Aula 05",
+    tipo: "Conceito",
+    enunciado: "Qual é a função do estágio <code>$unwind</code> em um pipeline de agregação MongoDB?",
+    opcoes: [
+      "Remove campos com valores nulos dos documentos do resultado.",
+      "Desconstrói um campo array em múltiplos documentos, um para cada elemento.",
+      "Agrupa documentos por um campo específico para calcular métricas.",
+      "Ordena o resultado do pipeline de forma decrescente."
+    ],
+    correta: 1,
+    feedback: "$unwind recebe um campo array e gera um documento separado para cada elemento do array. É essencial após um $lookup, pois o resultado da junção fica dentro de um array — o $unwind o \"desempacota\" para facilitar operações posteriores como $group ou $project."
+  },
+  {
+    aula: "Aula 05",
+    tipo: "Conceito",
+    enunciado: "Qual é a principal utilidade do estágio <code>$facet</code> em um pipeline de agregação?",
+    opcoes: [
+      "Criar índices em múltiplos campos da coleção simultaneamente.",
+      "Executar múltiplos sub-pipelines em paralelo sobre os mesmos dados de entrada.",
+      "Realizar $lookup entre mais de duas coleções ao mesmo tempo.",
+      "Validar o schema de todos os documentos de uma coleção."
+    ],
+    correta: 1,
+    feedback: "$facet permite executar vários pipelines de agregação paralelos sobre o mesmo conjunto de dados de entrada, retornando um único documento com os resultados de cada sub-pipeline. É útil para gerar KPIs e relatórios multi-dimensionais em uma única consulta."
+  },
+  {
+    aula: "Aula 05",
+    tipo: "Código",
+    enunciado: "Um desenvolvedor executa um <code>$lookup</code> mas o array resultante fica sempre <strong>vazio</strong>. De acordo com as boas práticas da Aula 05, qual é a causa mais provável?",
+    opcoes: [
+      "O $lookup só funciona dentro de sessões de transação ativas.",
+      "O número de documentos nas coleções é grande demais para o $lookup.",
+      "Os tipos do <code>localField</code> e <code>foreignField</code> são diferentes (ex.: String vs ObjectId).",
+      "Falta o estágio $unwind imediatamente antes do $lookup."
+    ],
+    correta: 2,
+    feedback: "Um erro clássico no $lookup é a diferença de tipos entre os campos de junção. Por exemplo, se curso_id é armazenado como String mas _id em cursos é ObjectId, o match nunca encontra correspondência e o array fica vazio. A solução é padronizar os tipos ou usar $lookup com pipeline e conversão de tipo."
+  }
+];
+
+// ─── ESTADO DO SIMULADO ───────────────────────────────────────────────────────
+let atual = 0;
+let respostas = new Array(questoes.length).fill(null); // índice da opção escolhida ou null
+let timerInterval;
+let segundosRestantes = 40 * 60;
+
+// ─── INICIAR SIMULADO ─────────────────────────────────────────────────────────
+function iniciarSimulado() {
+    document.getElementById('tela-inicio').style.display = 'none';
+    document.getElementById('tela-quiz').style.display = 'block';
+    construirIndicadores();
+    renderQuestao(0);
+    iniciarTimer();
+}
+
+function iniciarTimer() {
+    timerInterval = setInterval(() => {
+        segundosRestantes--;
+        atualizarTimer();
+        if (segundosRestantes <= 0) {
+            clearInterval(timerInterval);
+            finalizarSimulado();
+        }
+    }, 1000);
+}
+
+function atualizarTimer() {
+    const min = Math.floor(segundosRestantes / 60).toString().padStart(2, '0');
+    const sec = (segundosRestantes % 60).toString().padStart(2, '0');
+    const el = document.getElementById('timer-display');
+    el.textContent = `${min}:${sec}`;
+    el.classList.toggle('urgente', segundosRestantes <= 300);
+}
+
+// ─── INDICADORES ─────────────────────────────────────────────────────────────
+function construirIndicadores() {
+    const cont = document.getElementById('indicators');
+    cont.innerHTML = '';
+    questoes.forEach((_, i) => {
+        const d = document.createElement('div');
+        d.className = 'ind' + (i === 0 ? ' atual' : '');
+        d.textContent = i + 1;
+        d.onclick = () => renderQuestao(i);
+        cont.appendChild(d);
+    });
+}
+
+function atualizarIndicadores() {
+    const inds = document.querySelectorAll('.ind');
+    inds.forEach((el, i) => {
+        el.className = 'ind';
+        if (i === atual) el.classList.add('atual');
+        else if (respostas[i] !== null) {
+            const correto = respostas[i] === questoes[i].correta;
+            el.classList.add(correto ? 'correto' : 'errado');
+        }
+    });
+}
+
+// ─── RENDERIZAR QUESTÃO ───────────────────────────────────────────────────────
+function renderQuestao(idx) {
+    atual = idx;
+    const q = questoes[idx];
+    const respondida = respostas[idx] !== null;
+    const escolhida = respostas[idx];
+
+    // Barra de progresso
+    document.getElementById('num-atual').textContent = idx + 1;
+    document.getElementById('progress-bar').style.width = `${((idx + 1) / questoes.length) * 100}%`;
+
+    let opcoesHTML = '';
+    q.opcoes.forEach((op, i) => {
+        const letra = ['A','B','C','D'][i];
+        let classes = 'opcao';
+        if (respondida) {
+            classes += ' bloqueada';
+            if (i === q.correta) classes += ' correta';
+            else if (i === escolhida) classes += ' errada';
+        } else if (escolhida === i) {
+            classes += ' selecionada';
+        }
+
+        let conteudo = '';
+        if (typeof op === 'object' && op.code) {
+            conteudo = `<div class="texto"><pre>${op.code}</pre></div>`;
+        } else {
+            conteudo = `<div class="texto">${op}</div>`;
+        }
+
+        opcoesHTML += `
+            <div class="${classes}" onclick="selecionarOpcao(${idx}, ${i})">
+                <div class="letra">${letra}</div>
+                ${conteudo}
+            </div>`;
+    });
+
+    const feedbackClasse = respondida ? (escolhida === q.correta ? 'ok' : 'nok') : '';
+    const feedbackIcone = respondida ? (escolhida === q.correta ? '✅ Correto!' : '❌ Incorreto!') : '';
+    const feedbackStyle = respondida ? 'display:block' : 'display:none';
+
+    const btnAnterior = idx > 0
+        ? `<button class="btn btn-secondary" onclick="renderQuestao(${idx - 1})">← Anterior</button>`
+        : `<div></div>`;
+
+    const ehUltima = idx === questoes.length - 1;
+    const btnProx = ehUltima
+        ? `<button class="btn btn-primary" onclick="finalizarSimulado()">Finalizar Simulado</button>`
+        : `<button class="btn btn-primary" onclick="renderQuestao(${idx + 1})">Próxima →</button>`;
+
+    document.getElementById('card-questao').innerHTML = `
+        <span class="badge-aula">${q.aula}</span>
+        <span class="badge-tipo">${q.tipo}</span>
+        <p class="enunciado">${q.enunciado}</p>
+        <div class="opcoes">${opcoesHTML}</div>
+        <div class="feedback ${feedbackClasse}" style="${feedbackStyle}">
+            <strong>${feedbackIcone}</strong> ${q.feedback}
+        </div>
+        <div class="nav-btns">${btnAnterior}${btnProx}</div>
+    `;
+
+    atualizarIndicadores();
+}
+
+// ─── SELECIONAR OPÇÃO ─────────────────────────────────────────────────────────
+function selecionarOpcao(qIdx, opIdx) {
+    if (respostas[qIdx] !== null) return; // já respondida
+    respostas[qIdx] = opIdx;
+    renderQuestao(qIdx);
+}
+
+// ─── FINALIZAR ────────────────────────────────────────────────────────────────
+function finalizarSimulado() {
+    clearInterval(timerInterval);
+
+    const totalAcertos = respostas.reduce((acc, r, i) => acc + (r === questoes[i].correta ? 1 : 0), 0);
+    const nota = (totalAcertos / questoes.length * 10).toFixed(1);
+
+    let conceito, titulo;
+    if (totalAcertos >= 18)      { conceito = 'Excelente! Parabéns!'; titulo = 'Resultado Final'; }
+    else if (totalAcertos >= 14) { conceito = 'Muito Bom!'; titulo = 'Resultado Final'; }
+    else if (totalAcertos >= 10) { conceito = 'Aprovado'; titulo = 'Resultado Final'; }
+    else if (totalAcertos >= 8)  { conceito = 'Recuperação — Revise o conteúdo'; titulo = 'Resultado Final'; }
+    else                          { conceito = 'Reprovado — Estude as aulas novamente'; titulo = 'Resultado Final'; }
+
+    document.getElementById('tela-quiz').style.display = 'none';
+    const telaRes = document.getElementById('tela-resultado');
+    telaRes.style.display = 'block';
+
+    document.getElementById('res-titulo').textContent = titulo;
+    document.getElementById('res-nota').textContent = nota;
+    document.getElementById('res-conceito').textContent = conceito;
+    document.getElementById('res-detalhe').textContent =
+        `Você acertou ${totalAcertos} de ${questoes.length} questões`;
+
+    // Acertos por aula
+    const aulaNames = ['Aula 01','Aula 02','Aula 03','Aula 04','Aula 05'];
+    const aulaAcertos = {};
+    const aulaTotais = {};
+    aulaNames.forEach(a => { aulaAcertos[a] = 0; aulaTotais[a] = 0; });
+    questoes.forEach((q, i) => {
+        aulaTotais[q.aula]++;
+        if (respostas[i] === q.correta) aulaAcertos[q.aula]++;
+    });
+
+    const aulaSubtitulos = {
+        'Aula 01': 'História / CAP / ACID',
+        'Aula 02': 'Evolução / SQL vs NoSQL',
+        'Aula 03': 'CRUD Básico',
+        'Aula 04': 'CRUD Avançado',
+        'Aula 05': '$lookup / Pipeline'
+    };
+
+    let aulaHTML = '';
+    aulaNames.forEach(a => {
+        const cor = aulaAcertos[a] === aulaTotais[a] ? '#27ae60' :
+                    aulaAcertos[a] >= aulaTotais[a] / 2 ? '#f39c12' : '#e74c3c';
+        aulaHTML += `
+            <div class="res-aula-card" style="border-top-color:${cor}">
+                <div class="titulo-aula">${a}<br><small>${aulaSubtitulos[a]}</small></div>
+                <div class="acertos-aula" style="color:${cor}">${aulaAcertos[a]}/${aulaTotais[a]}</div>
+            </div>`;
+    });
+    document.getElementById('res-por-aula').innerHTML = aulaHTML;
+
+    // Gabarito
+    let gabHTML = '';
+    questoes.forEach((q, i) => {
+        const acertou = respostas[i] === q.correta;
+        const icone = acertou ? '✅' : '❌';
+        const opcaoCorreta = typeof q.opcoes[q.correta] === 'object'
+            ? '[código] ' + ['A','B','C','D'][q.correta]
+            : ['A','B','C','D'][q.correta] + ') ' + q.opcoes[q.correta].substring(0, 60) + (q.opcoes[q.correta].length > 60 ? '…' : '');
+        const respAluno = respostas[i] !== null
+            ? (acertou ? '' : ` | Sua resposta: ${['A','B','C','D'][respostas[i]]}`)
+            : ' | Não respondida';
+        gabHTML += `
+            <div class="gabarito-item">
+                <span class="qi">Q${i+1}</span>
+                <span class="resultado-icon">${icone}</span>
+                <div class="enun-resumo">
+                    <div>${q.aula} — ${q.tipo}</div>
+                    <div class="resp-info">Correta: ${opcaoCorreta}${respAluno}</div>
+                </div>
+            </div>`;
+    });
+    document.getElementById('gabarito-lista').innerHTML = gabHTML;
+
+    telaRes.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
