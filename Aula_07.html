@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo4j na Prática - Banco Escolar - Aula 07</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .slide.active { display: block; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #f093fb, #f5576c, #fda085);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            color: #f093fb;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h3 { font-size: 1.6rem; margin: 20px 0 15px; color: #fda085; }
+        h4 { font-size: 1.2rem; color: #f5576c; margin-bottom: 10px; }
+
+        .emoji { font-size: 2rem; }
+
+        .code-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #f093fb;
+        }
+
+        .code-title {
+            color: #fda085;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        pre { margin: 0 !important; font-size: 0.85rem; line-height: 1.5; }
+
+        .concept-box {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 15px 0;
+            border-left: 5px solid #fda085;
+        }
+
+        .concept-item {
+            margin: 12px 0;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #f093fb;
+        }
+
+        .concept-item strong { color: #f093fb; }
+
+        .exercise-box {
+            background: rgba(240, 147, 251, 0.1);
+            border: 2px solid rgba(240, 147, 251, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .exercise-number {
+            display: inline-block;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+
+        .exercise-title {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #fda085;
+            margin-bottom: 8px;
+        }
+
+        .exercise-explain {
+            font-size: 0.95rem;
+            color: #c9b8ff;
+            margin: 8px 0;
+            padding: 8px 12px;
+            background: rgba(201, 184, 255, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #c9b8ff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        th { background: rgba(240, 147, 251, 0.25); color: #f093fb; font-weight: bold; }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(240, 147, 251, 0.2);
+            color: white;
+            border: 1px solid rgba(240, 147, 251, 0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover { background: rgba(240, 147, 251, 0.4); transform: translateY(-2px); }
+        .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(240, 147, 251, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(240, 147, 251, 0.3);
+        }
+
+        .aula-badge {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, rgba(240, 147, 251, 0.3) 0%, rgba(245, 87, 108, 0.2) 100%);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #f093fb;
+            font-weight: bold;
+        }
+
+        .warning {
+            background: rgba(255, 200, 50, 0.15);
+            border: 1px solid rgba(255, 200, 50, 0.4);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 12px 0;
+            color: #ffe58f;
+        }
+
+        .success {
+            background: rgba(0, 255, 128, 0.1);
+            border: 1px solid rgba(0, 255, 128, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 12px 0;
+            color: #80ffb4;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin: 15px 0;
+        }
+
+        .three-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .node-visual {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 50px;
+            margin: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 0 15px rgba(240, 147, 251, 0.5);
+        }
+
+        .rel-visual {
+            display: inline-block;
+            background: rgba(253, 160, 133, 0.2);
+            color: #fda085;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin: 0 8px;
+            border: 2px solid #fda085;
+            font-size: 0.85rem;
+        }
+
+        .graph-visual {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 15px 0;
+            text-align: center;
+            border: 2px solid rgba(240, 147, 251, 0.3);
+            line-height: 2.5;
+        }
+
+        .feedback-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(240, 147, 251, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 12px 0;
+        }
+
+        .feedback-card h4 { color: #fda085; margin-bottom: 12px; }
+
+        ul { margin: 12px 0; padding-left: 20px; }
+        li { margin: 8px 0; line-height: 1.6; }
+
+        @media (max-width: 768px) {
+            .two-column, .three-column { grid-template-columns: 1fr; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.7rem; }
+            .slide { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Slide 1: Título -->
+        <div class="slide active">
+            <h1>Neo4j na Prática</h1>
+            <div style="text-align: center; margin: 30px 0;">
+                <div style="font-size: 3.5rem; margin: 20px 0;">🏫🔗</div>
+                <h2 style="justify-content: center; margin-bottom: 15px;">Banco de Dados de uma Escola</h2>
+                <div style="font-size: 1.1rem; color: #c9b8ff; line-height: 1.8;">
+                    <p>Modelagem real · Exercícios simples e avançados · Feedback de performance</p>
+                    <p>Com os professores mais engraçados da história da educação 🎓😂</p>
+                </div>
+            </div>
+
+            <div class="graph-visual">
+                <span class="node-visual">Zé da Manga</span>
+                <span class="rel-visual">→ MATRICULADO_EM →</span>
+                <span class="node-visual">Turma 3B</span>
+                <span class="rel-visual">→ LECIONA →</span>
+                <span class="node-visual">Tia Teteca</span>
+            </div>
+
+            <div class="concept-box">
+                <h3>🎯 O que você vai aprender hoje:</h3>
+                <ul>
+                    <li>Modelar um banco escolar completo no Neo4j (nós, labels, relacionamentos)</li>
+                    <li>Criar toda a estrutura com Cypher do zero</li>
+                    <li>Exercícios simples de consulta e relacionamento</li>
+                    <li>Exercícios avançados: caminhos, agregações, recomendações</li>
+                    <li>Feedback com boas práticas e processos preciosos do Neo4j</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <strong>📌 Pré-requisito:</strong> Esta aula é continuação da Aula 06 (CRUD Neo4j). Tenha o Neo4j rodando antes de começar!
+            </div>
+        </div>
+
+        <!-- Slide 2: Modelagem do Banco Escolar -->
+        <div class="slide">
+            <h2><span class="emoji">📐</span>Modelando o Banco Escolar</h2>
+
+            <div class="concept-box">
+                <h3>🔵 Nós (Labels) da Escola</h3>
+                <div class="three-column" style="margin-top: 15px;">
+                    <div class="concept-item">
+                        <strong>:Aluno</strong><br>
+                        nome, idade, matricula, ativo
+                    </div>
+                    <div class="concept-item">
+                        <strong>:Professor</strong><br>
+                        nome, especializacao, registro
+                    </div>
+                    <div class="concept-item">
+                        <strong>:Turma</strong><br>
+                        codigo, ano, periodo
+                    </div>
+                    <div class="concept-item">
+                        <strong>:Disciplina</strong><br>
+                        nome, carga_horaria, creditos
+                    </div>
+                    <div class="concept-item">
+                        <strong>:Escola</strong><br>
+                        nome, cidade, fundacao
+                    </div>
+                    <div class="concept-item">
+                        <strong>:Diretora</strong><br>
+                        (label extra em um Professor)
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box" style="margin-top: 20px;">
+                <h3>🔗 Relacionamentos</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Relacionamento</th>
+                            <th>De → Para</th>
+                            <th>Propriedades</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="highlight">MATRICULADO_EM</span></td>
+                            <td>Aluno → Turma</td>
+                            <td>desde, status</td>
+                        </tr>
+                        <tr>
+                            <td><span class="highlight">LECIONA</span></td>
+                            <td>Professor → Disciplina</td>
+                            <td>desde, carga_semanal</td>
+                        </tr>
+                        <tr>
+                            <td><span class="highlight">MINISTRADA_EM</span></td>
+                            <td>Disciplina → Turma</td>
+                            <td>horario, sala</td>
+                        </tr>
+                        <tr>
+                            <td><span class="highlight">TIROU_NOTA</span></td>
+                            <td>Aluno → Disciplina</td>
+                            <td>nota, semestre, aprovado</td>
+                        </tr>
+                        <tr>
+                            <td><span class="highlight">AMIGO_DE</span></td>
+                            <td>Aluno ↔ Aluno</td>
+                            <td>desde, nivel_amizade</td>
+                        </tr>
+                        <tr>
+                            <td><span class="highlight">PERTENCE_A</span></td>
+                            <td>Aluno/Professor → Escola</td>
+                            <td>ingresso</td>
+                        </tr>
+                        <tr>
+                            <td><span class="highlight">DIRIGE</span></td>
+                            <td>Professor → Escola</td>
+                            <td>desde, mandato</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Slide 3: Criando o Banco - Escola e Professores -->
+        <div class="slide">
+            <h2><span class="emoji">🟢</span>Criando o Banco — Escola e Professores</h2>
+
+            <div class="warning">
+                <strong>⚠️ Antes de começar:</strong> Limpe o banco para evitar duplicatas!
+                <br><code style="color: #ffd700;">MATCH (n) DETACH DELETE n</code>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🏫 Passo 1 — Criar a Escola</div>
+                <pre><code class="language-cypher">CREATE (e:Escola {
+  nome: "Escola Estadual Dona Filó",
+  cidade: "Saquarema",
+  fundacao: 1987,
+  alunos_total: 320
+})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">👩‍🏫 Passo 2 — Criar os Professores (com nomes épicos)</div>
+                <pre><code class="language-cypher">CREATE
+  (p1:Professor {nome: "Tia Teteca",        especializacao: "Matematica",  registro: "REG001", idade: 52}),
+  (p2:Professor {nome: "Toninho Catarino",  especializacao: "Portugues",   registro: "REG002", idade: 48}),
+  (p3:Professor {nome: "Brigida das Couves",especializacao: "Ciencias",    registro: "REG003", idade: 44}),
+  (p4:Professor {nome: "Nego Bom",          especializacao: "Historia",    registro: "REG004", idade: 55}),
+  (p5:Professor {nome: "Dona Filó",         especializacao: "Gestao",      registro: "REG005", idade: 60})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">📚 Passo 3 — Adicionar label :Diretora à Dona Filó</div>
+                <pre><code class="language-cypher">MATCH (p:Professor {nome: "Dona Filó"})
+SET p:Diretora
+RETURN labels(p), p.nome</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">📖 Passo 4 — Criar as Disciplinas</div>
+                <pre><code class="language-cypher">CREATE
+  (d1:Disciplina {nome: "Matematica",        carga_horaria: 80, creditos: 4}),
+  (d2:Disciplina {nome: "Portugues",         carga_horaria: 80, creditos: 4}),
+  (d3:Disciplina {nome: "Ciencias",          carga_horaria: 60, creditos: 3}),
+  (d4:Disciplina {nome: "Historia",          carga_horaria: 60, creditos: 3}),
+  (d5:Disciplina {nome: "Educacao Fisica",   carga_horaria: 40, creditos: 2})</code></pre>
+            </div>
+
+            <div class="success">
+                <strong>✅ Dica:</strong> Use <code>MATCH (n) RETURN labels(n), count(n)</code> para conferir quantos nós de cada tipo foram criados!
+            </div>
+        </div>
+
+        <!-- Slide 4: Criando Turmas, Alunos e Relacionamentos -->
+        <div class="slide">
+            <h2><span class="emoji">🟢</span>Turmas, Alunos e Relacionamentos</h2>
+
+            <div class="code-container">
+                <div class="code-title">🏛️ Passo 5 — Criar as Turmas</div>
+                <pre><code class="language-cypher">CREATE
+  (t1:Turma {codigo: "3A", ano: 2024, periodo: "Manha",  sala: "101"}),
+  (t2:Turma {codigo: "3B", ano: 2024, periodo: "Tarde",  sala: "102"}),
+  (t3:Turma {codigo: "2A", ano: 2024, periodo: "Manha",  sala: "103"})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🎒 Passo 6 — Criar os Alunos (galera do fundão)</div>
+                <pre><code class="language-cypher">CREATE
+  (a1:Aluno {nome: "Ze da Manga",       idade: 16, matricula: "2024001", ativo: true}),
+  (a2:Aluno {nome: "Ze da Couve",       idade: 15, matricula: "2024002", ativo: true}),
+  (a3:Aluno {nome: "Seu Crispim",       idade: 17, matricula: "2024003", ativo: true}),
+  (a4:Aluno {nome: "Mariazinha Pe de Pano", idade: 15, matricula: "2024004", ativo: true}),
+  (a5:Aluno {nome: "Joao Batatinha",    idade: 16, matricula: "2024005", ativo: true}),
+  (a6:Aluno {nome: "Lurdes Cabocla",    idade: 16, matricula: "2024006", ativo: true}),
+  (a7:Aluno {nome: "Toco de Vassoura",  idade: 17, matricula: "2024007", ativo: false}),
+  (a8:Aluno {nome: "Pretinha do Norte", idade: 15, matricula: "2024008", ativo: true})</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🔗 Passo 7 — Matricular alunos nas turmas</div>
+                <pre><code class="language-cypher">MATCH (a1:Aluno {nome: "Ze da Manga"}),       (t1:Turma {codigo: "3A"})
+MATCH (a2:Aluno {nome: "Ze da Couve"}),       (t1:Turma {codigo: "3A"})
+MATCH (a3:Aluno {nome: "Seu Crispim"}),       (t2:Turma {codigo: "3B"})
+MATCH (a4:Aluno {nome: "Mariazinha Pe de Pano"}), (t2:Turma {codigo: "3B"})
+MATCH (a5:Aluno {nome: "Joao Batatinha"}),    (t1:Turma {codigo: "3A"})
+MATCH (a6:Aluno {nome: "Lurdes Cabocla"}),    (t3:Turma {codigo: "2A"})
+MATCH (a7:Aluno {nome: "Toco de Vassoura"}),  (t3:Turma {codigo: "2A"})
+MATCH (a8:Aluno {nome: "Pretinha do Norte"}), (t2:Turma {codigo: "3B"})
+CREATE (a1)-[:MATRICULADO_EM {desde: 2024, status: "ativo"}]->(t1)
+CREATE (a2)-[:MATRICULADO_EM {desde: 2024, status: "ativo"}]->(t1)
+CREATE (a3)-[:MATRICULADO_EM {desde: 2024, status: "ativo"}]->(t2)
+CREATE (a4)-[:MATRICULADO_EM {desde: 2024, status: "ativo"}]->(t2)
+CREATE (a5)-[:MATRICULADO_EM {desde: 2024, status: "ativo"}]->(t1)
+CREATE (a6)-[:MATRICULADO_EM {desde: 2024, status: "ativo"}]->(t3)
+CREATE (a7)-[:MATRICULADO_EM {desde: 2023, status: "retido"}]->(t3)
+CREATE (a8)-[:MATRICULADO_EM {desde: 2024, status: "ativo"}]->(t2)</code></pre>
+            </div>
+        </div>
+
+        <!-- Slide 5: Relacionamentos Professores, Notas e Amizades -->
+        <div class="slide">
+            <h2><span class="emoji">🔗</span>Professores, Notas e Amizades</h2>
+
+            <div class="code-container">
+                <div class="code-title">📝 Passo 8 — Professores lecionam disciplinas</div>
+                <pre><code class="language-cypher">MATCH (tia:Professor {nome: "Tia Teteca"}),        (mat:Disciplina {nome: "Matematica"})
+MATCH (ton:Professor {nome: "Toninho Catarino"}),  (por:Disciplina {nome: "Portugues"})
+MATCH (bri:Professor {nome: "Brigida das Couves"}),(cie:Disciplina {nome: "Ciencias"})
+MATCH (neg:Professor {nome: "Nego Bom"}),          (his:Disciplina {nome: "Historia"})
+CREATE (tia)-[:LECIONA {desde: 2010, carga_semanal: 4}]->(mat)
+CREATE (ton)-[:LECIONA {desde: 2015, carga_semanal: 4}]->(por)
+CREATE (bri)-[:LECIONA {desde: 2018, carga_semanal: 3}]->(cie)
+CREATE (neg)-[:LECIONA {desde: 2008, carga_semanal: 3}]->(his)</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🎯 Passo 9 — Registrar notas dos alunos</div>
+                <pre><code class="language-cypher">MATCH (ze1:Aluno {nome: "Ze da Manga"}),        (mat:Disciplina {nome: "Matematica"})
+MATCH (ze2:Aluno {nome: "Ze da Couve"}),        (mat)
+MATCH (cri:Aluno {nome: "Seu Crispim"}),        (por:Disciplina {nome: "Portugues"})
+MATCH (mari:Aluno {nome: "Mariazinha Pe de Pano"}), (mat)
+MATCH (bata:Aluno {nome: "Joao Batatinha"}),    (cie:Disciplina {nome: "Ciencias"})
+MATCH (lur:Aluno {nome: "Lurdes Cabocla"}),     (his:Disciplina {nome: "Historia"})
+MATCH (pre:Aluno {nome: "Pretinha do Norte"}),  (mat)
+CREATE (ze1)-[:TIROU_NOTA  {nota: 4.5, semestre: "2024-1", aprovado: false}]->(mat)
+CREATE (ze2)-[:TIROU_NOTA  {nota: 7.8, semestre: "2024-1", aprovado: true}]->(mat)
+CREATE (cri)-[:TIROU_NOTA  {nota: 9.2, semestre: "2024-1", aprovado: true}]->(por)
+CREATE (mari)-[:TIROU_NOTA {nota: 8.0, semestre: "2024-1", aprovado: true}]->(mat)
+CREATE (bata)-[:TIROU_NOTA {nota: 5.5, semestre: "2024-1", aprovado: false}]->(cie)
+CREATE (lur)-[:TIROU_NOTA  {nota: 6.5, semestre: "2024-1", aprovado: true}]->(his)
+CREATE (pre)-[:TIROU_NOTA  {nota: 9.8, semestre: "2024-1", aprovado: true}]->(mat)</code></pre>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">👫 Passo 10 — Amizades (fofocas do corredor)</div>
+                <pre><code class="language-cypher">MATCH (ze1:Aluno {nome: "Ze da Manga"}),    (ze2:Aluno {nome: "Ze da Couve"})
+MATCH (ze1),                                (bata:Aluno {nome: "Joao Batatinha"})
+MATCH (cri:Aluno {nome: "Seu Crispim"}),    (pre:Aluno {nome: "Pretinha do Norte"})
+MATCH (mari:Aluno {nome: "Mariazinha Pe de Pano"}), (pre)
+MATCH (ze2),                                (mari)
+CREATE (ze1)-[:AMIGO_DE {desde: 2022, nivel_amizade: "chegado"}]->(ze2)
+CREATE (ze1)-[:AMIGO_DE {desde: 2023, nivel_amizade: "colega"}]->(bata)
+CREATE (cri)-[:AMIGO_DE {desde: 2021, nivel_amizade: "chegado"}]->(pre)
+CREATE (mari)-[:AMIGO_DE {desde: 2023, nivel_amizade: "colega"}]->(pre)
+CREATE (ze2)-[:AMIGO_DE {desde: 2024, nivel_amizade: "novo"}]->(mari)</code></pre>
+            </div>
+
+            <div class="success">
+                <strong>✅ Banco criado!</strong> Agora você tem a Escola Dona Filó completa com alunos, professores, turmas, disciplinas, notas e amizades. Hora dos exercícios!
+            </div>
+        </div>
+
+        <!-- Slide 6: Exercícios Simples (1 a 4) -->
+        <div class="slide">
+            <h2><span class="emoji">🟡</span>Exercícios Simples — Parte 1</h2>
+            <p style="color: #c9b8ff; margin-bottom: 20px;">Consultas básicas para aquecer os neurônios antes da Tia Teteca aparecer com a lista de exercícios 😅</p>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">1</span>Liste todos os alunos ativos da escola</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Usamos WHERE para filtrar só os alunos com <code>ativo: true</code>, ignorando o Toco de Vassoura que foi reprovado.</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a:Aluno)
+WHERE a.ativo = true
+RETURN a.nome AS aluno, a.idade AS idade, a.matricula AS matricula
+ORDER BY a.nome</code></pre>
+                </div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">2</span>Quais professores existem e o que ensinam?</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Navegamos pelo relacionamento <code>LECIONA</code> para conectar professores às suas disciplinas. Vemos a Tia Teteca dominando a Matemática!</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (p:Professor)-[:LECIONA]->(d:Disciplina)
+RETURN p.nome AS professor, p.especializacao AS area, d.nome AS disciplina
+ORDER BY p.nome</code></pre>
+                </div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">3</span>Quais alunos estão na turma 3A?</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Filtramos pelo código da turma no relacionamento <code>MATRICULADO_EM</code> para encontrar só quem está na turma 3A — o famoso Zé da Manga e seus colegas.</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a:Aluno)-[:MATRICULADO_EM]->(t:Turma {codigo: "3A"})
+RETURN a.nome AS aluno, a.idade AS idade, t.periodo AS periodo
+ORDER BY a.nome</code></pre>
+                </div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">4</span>Qual é a nota do Zé da Manga em Matemática?</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Navegamos pelo relacionamento <code>TIROU_NOTA</code> que carrega a propriedade <code>nota</code>. Spoiler: o Zé da Manga foi mal... muito mal 🤦</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Ze da Manga"})-[n:TIROU_NOTA]->(d:Disciplina)
+RETURN a.nome AS aluno, d.nome AS disciplina, n.nota AS nota, n.aprovado AS aprovado</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Exercícios Simples (5 a 7) -->
+        <div class="slide">
+            <h2><span class="emoji">🟡</span>Exercícios Simples — Parte 2</h2>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">5</span>Quem são os amigos do Zé da Manga?</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> O relacionamento <code>AMIGO_DE</code> é bidirecional na prática social, mas no grafo tem direção. Usamos <code>-[:AMIGO_DE]-</code> sem seta para capturar ambas as direções.</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (ze:Aluno {nome: "Ze da Manga"})-[:AMIGO_DE]-(amigo:Aluno)
+RETURN ze.nome AS eu, amigo.nome AS amigo
+ORDER BY amigo.nome</code></pre>
+                </div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">6</span>Quem são os alunos aprovados em Matemática?</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Filtramos o relacionamento pelo <code>aprovado: true</code>. A Pretinha do Norte com 9.8 está no topo — e o Zé da Manga nem aparece 😅</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a:Aluno)-[n:TIROU_NOTA]->(d:Disciplina {nome: "Matematica"})
+WHERE n.aprovado = true
+RETURN a.nome AS aluno, n.nota AS nota
+ORDER BY n.nota DESC</code></pre>
+                </div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">7</span>Qual professor tem mais tempo de casa na escola?</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Usamos o <code>ORDER BY</code> na propriedade <code>desde</code> do relacionamento <code>LECIONA</code> para ordenar por antiguidade. Nego Bom, desde 2008, é o decano!</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (p:Professor)-[l:LECIONA]->(d:Disciplina)
+RETURN p.nome AS professor, d.nome AS disciplina, l.desde AS ano_inicio
+ORDER BY l.desde ASC</code></pre>
+                </div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">8</span>Quantos alunos há em cada turma?</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Aqui entra a <strong>agregação</strong> com <code>count()</code>. O Neo4j percorre o grafo e conta quantos alunos chegam em cada turma pelo relacionamento MATRICULADO_EM.</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a:Aluno)-[:MATRICULADO_EM]->(t:Turma)
+RETURN t.codigo AS turma, t.periodo AS periodo, count(a) AS total_alunos
+ORDER BY total_alunos DESC</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Exercícios Avançados (1 e 2) -->
+        <div class="slide">
+            <h2><span class="emoji">🔴</span>Exercícios Avançados — Parte 1</h2>
+            <p style="color: #c9b8ff; margin-bottom: 20px;">Agora a Tia Teteca vai aparecer pessoalmente nos exercícios 👩‍🏫💪</p>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">A1</span>Encontre alunos que são amigos E estão na mesma turma</div>
+                <div class="exercise-explain">🧠 <strong>Por que (complexidade):</strong> Isso é um <strong>padrão duplo</strong> no grafo — o Neo4j precisa checar dois relacionamentos ao mesmo tempo: <code>AMIGO_DE</code> e <code>MATRICULADO_EM</code>. Em SQL isso seria um JOIN múltiplo. No grafo é natural!</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a1:Aluno)-[:AMIGO_DE]-(a2:Aluno)
+MATCH (a1)-[:MATRICULADO_EM]->(t:Turma)<-[:MATRICULADO_EM]-(a2)
+WHERE id(a1) < id(a2)
+RETURN a1.nome AS aluno1, a2.nome AS aluno2, t.codigo AS turma_em_comum
+ORDER BY t.codigo</code></pre>
+                </div>
+                <div class="exercise-explain">💡 <strong>Detalhe:</strong> O <code>WHERE id(a1) &lt; id(a2)</code> evita mostrar o par duplicado (Ze-Couve + Couve-Ze) — cada par aparece só uma vez!</div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">A2</span>Qual a média de notas por disciplina? (com alerta de reprovação)</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Usamos <code>avg()</code> para calcular a média e <code>CASE</code> para criar uma coluna condicional — mostrando "RISCO" quando a média cai abaixo de 6.0. Isso é análise de dados dentro do grafo!</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a:Aluno)-[n:TIROU_NOTA]->(d:Disciplina)
+WITH d.nome AS disciplina,
+     avg(n.nota) AS media,
+     count(a) AS total_alunos,
+     count(CASE WHEN n.aprovado = false THEN 1 END) AS reprovados
+RETURN disciplina,
+       round(media, 2) AS media_turma,
+       total_alunos,
+       reprovados,
+       CASE WHEN media < 6.0 THEN "⚠️ RISCO" ELSE "✅ OK" END AS status
+ORDER BY media ASC</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Exercícios Avançados (3 e 4) -->
+        <div class="slide">
+            <h2><span class="emoji">🔴</span>Exercícios Avançados — Parte 2</h2>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">A3</span>Amigos de amigos — quem o Zé da Manga deveria conhecer?</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Este é um <strong>padrão de recomendação</strong>, o mesmo usado por redes sociais como LinkedIn ("pessoas que você pode conhecer"). O Neo4j percorre 2 saltos no grafo de amizade e filtra quem o Zé já conhece.</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (ze:Aluno {nome: "Ze da Manga"})-[:AMIGO_DE]->(amigo:Aluno)-[:AMIGO_DE]->(indicado:Aluno)
+WHERE NOT (ze)-[:AMIGO_DE]-(indicado)
+  AND ze <> indicado
+RETURN indicado.nome AS indicado_para_conhecer,
+       collect(amigo.nome) AS via_amigos,
+       count(amigo) AS amigos_em_comum
+ORDER BY amigos_em_comum DESC</code></pre>
+                </div>
+                <div class="exercise-explain">💡 <strong>Resultado esperado:</strong> O Zé da Manga será conectado à Mariazinha Pé de Pano via Zé da Couve. Fofoca de corredor virou algoritmo de grafo! 😂</div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">A4</span>Caminho mais curto entre dois alunos pela rede de amizades</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> <code>shortestPath()</code> é um algoritmo nativo do Neo4j que encontra o menor número de saltos entre dois nós. Em SQL isso seria impossível sem recursividade complexa. Aqui é uma linha!</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a:Aluno {nome: "Ze da Manga"}), (b:Aluno {nome: "Pretinha do Norte"})
+MATCH path = shortestPath((a)-[:AMIGO_DE*]-(b))
+RETURN [no IN nodes(path) | no.nome] AS caminho_de_amizades,
+       length(path) AS graus_de_separacao</code></pre>
+                </div>
+                <div class="exercise-explain">💡 <strong>Lendo o resultado:</strong> O caminho mostra por quais amigos a informação viajaria de uma ponta à outra — tipo o "6 graus de separação" de Kevin Bacon, mas na escola do bairro 😄</div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Exercícios Avançados (5 e 6) -->
+        <div class="slide">
+            <h2><span class="emoji">🔴</span>Exercícios Avançados — Parte 3</h2>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">A5</span>Qual professor indiretamente influencia mais alunos? (Centralidade)</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Aqui medimos a <strong>influência indireta</strong> — o professor que leciona a disciplina onde mais alunos tiraram nota. Isso simula análise de centralidade de grafos, usada em grafos de conhecimento e IA.</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (p:Professor)-[:LECIONA]->(d:Disciplina)<-[:TIROU_NOTA]-(a:Aluno)
+WITH p.nome AS professor, d.nome AS disciplina,
+     count(a) AS alunos_alcancados,
+     avg(a.idade) AS media_idade_turma
+RETURN professor, disciplina, alunos_alcancados, round(media_idade_turma, 1) AS media_idade
+ORDER BY alunos_alcancados DESC</code></pre>
+                </div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">A6</span>Grafo completo: professor → disciplina → aluno aprovado → amigos dele</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> Este é um <strong>padrão de travessia profunda</strong> — percorremos 3 relacionamentos diferentes de uma vez. Em bancos relacionais seriam 3 JOINs. No Neo4j é leitura natural do grafo. Isso é o poder do modelo de grafo!</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (p:Professor)-[:LECIONA]->(d:Disciplina)<-[n:TIROU_NOTA]-(a:Aluno)
+WHERE n.aprovado = true
+OPTIONAL MATCH (a)-[:AMIGO_DE]-(amigo:Aluno)
+RETURN p.nome AS professor,
+       d.nome AS disciplina,
+       a.nome AS aluno_aprovado,
+       n.nota AS nota,
+       collect(amigo.nome) AS rede_de_amigos
+ORDER BY n.nota DESC</code></pre>
+                </div>
+                <div class="exercise-explain">💡 <strong>OPTIONAL MATCH:</strong> Como um LEFT JOIN — retorna o aluno mesmo que ele não tenha amigos cadastrados. O Toco de Vassoura agradece por ainda aparecer na lista 😅</div>
+            </div>
+
+            <div class="exercise-box">
+                <div class="exercise-title"><span class="exercise-number">A7</span>Detectar alunos em risco: reprovado E sem amigos que passaram</div>
+                <div class="exercise-explain">🧠 <strong>Por que:</strong> <strong>Detecção de padrão negativo</strong> — quem está reprovado e não tem amigos aprovados para "puxar" pelo grupo de estudo. Esse tipo de análise é usado em sistemas de apoio estudantil.</div>
+                <div class="code-container">
+                    <pre><code class="language-cypher">MATCH (a:Aluno)-[n:TIROU_NOTA]->(d:Disciplina)
+WHERE n.aprovado = false
+  AND NOT EXISTS {
+    MATCH (a)-[:AMIGO_DE]-(amigo:Aluno)-[:TIROU_NOTA]->(d)
+    WHERE amigo IS NOT NULL
+  }
+RETURN a.nome AS aluno_em_risco, d.nome AS disciplina, n.nota AS nota,
+       "Sem amigos aprovados nesta disciplina" AS situacao</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Feedback — Performance e Índices -->
+        <div class="slide">
+            <h2><span class="emoji">⚡</span>Feedback: Performance e Índices</h2>
+            <p style="color: #c9b8ff; margin-bottom: 20px;">Processos preciosos que fazem o Neo4j voar — a Tia Teteca aprovaria essa eficiência! ⚡</p>
+
+            <div class="feedback-card">
+                <h4>📌 1 — Crie índices para propriedades frequentemente consultadas</h4>
+                <p style="color: #c9b8ff; margin-bottom: 12px;">Sem índice, o Neo4j precisa varrer <strong>todos</strong> os nós para encontrar um pelo nome. Com índice, vai direto ao ponto.</p>
+                <div class="code-container">
+                    <pre><code class="language-cypher">// Criar índice na propriedade "nome" de :Aluno
+CREATE INDEX aluno_nome IF NOT EXISTS FOR (a:Aluno) ON (a.nome)
+
+// Criar índice na propriedade "nome" de :Professor
+CREATE INDEX professor_nome IF NOT EXISTS FOR (p:Professor) ON (p.nome)
+
+// Criar índice na matricula (busca única)
+CREATE CONSTRAINT aluno_matricula IF NOT EXISTS
+FOR (a:Aluno) REQUIRE a.matricula IS UNIQUE
+
+// Ver todos os índices criados
+SHOW INDEXES</code></pre>
+                </div>
+                <div class="success">
+                    <strong>🚀 Resultado prático:</strong> Uma busca como <code>MATCH (a:Aluno {nome: "Ze da Manga"})</code> pode ser de 100x a 1000x mais rápida com índice!
+                </div>
+            </div>
+
+            <div class="feedback-card">
+                <h4>📌 2 — Avoid SuperNodes (nós com muitos relacionamentos)</h4>
+                <p style="color: #c9b8ff; margin-bottom: 12px;">Se um nó como a <strong>Escola</strong> acumular relacionamentos com 10.000 alunos, consultas nele ficam lentas. Prefira labels + índices a conectar tudo em um só nó.</p>
+                <div class="code-container">
+                    <pre><code class="language-cypher">// ❌ Evite isso quando a escola crescer muito:
+MATCH (e:Escola {nome: "Escola Estadual Dona Filo"})<-[:PERTENCE_A]-(a:Aluno)
+RETURN count(a)
+
+// ✅ Prefira filtrar diretamente pela propriedade indexada:
+MATCH (a:Aluno)
+WHERE a.ativo = true
+RETURN count(a) AS total_ativos</code></pre>
+                </div>
+            </div>
+
+            <div class="feedback-card">
+                <h4>📌 3 — Use WITH para quebrar queries complexas em etapas</h4>
+                <div class="code-container">
+                    <pre><code class="language-cypher">// WITH funciona como um "checkpoint" — você define variáveis intermediárias
+// e passa só o necessário para a próxima etapa da query
+
+MATCH (d:Disciplina)<-[n:TIROU_NOTA]-(a:Aluno)
+WITH d, avg(n.nota) AS media, count(a) AS total
+WHERE media < 6.0
+MATCH (p:Professor)-[:LECIONA]->(d)
+RETURN p.nome AS professor, d.nome AS disciplina, round(media, 2) AS media, total</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Feedback — EXPLAIN, PROFILE e APOC -->
+        <div class="slide">
+            <h2><span class="emoji">🔬</span>Feedback: Diagnose suas Queries</h2>
+
+            <div class="feedback-card">
+                <h4>🧪 EXPLAIN — Veja o plano de execução SEM rodar</h4>
+                <p style="color: #c9b8ff; margin-bottom: 12px;">Como o <code>EXPLAIN</code> do SQL — mostra como o Neo4j planeja executar a query antes de rodar. Útil para identificar gargalos antes de testar em produção.</p>
+                <div class="code-container">
+                    <pre><code class="language-cypher">EXPLAIN
+MATCH (a:Aluno {nome: "Ze da Manga"})-[:AMIGO_DE]->(amigo)
+RETURN amigo.nome</code></pre>
+                </div>
+                <p style="color: #c9b8ff; font-size: 0.9rem; margin-top: 8px;">→ O Neo4j Browser mostra um diagrama de operadores. Procure por <strong>NodeIndexSeek</strong> (bom!) em vez de <strong>AllNodesScan</strong> (ruim!).</p>
+            </div>
+
+            <div class="feedback-card">
+                <h4>🔬 PROFILE — Veja o custo real APÓS rodar</h4>
+                <div class="code-container">
+                    <pre><code class="language-cypher">PROFILE
+MATCH (p:Professor)-[:LECIONA]->(d:Disciplina)<-[n:TIROU_NOTA]-(a:Aluno)
+WHERE n.aprovado = true
+RETURN p.nome, d.nome, count(a) AS aprovados</code></pre>
+                </div>
+                <p style="color: #c9b8ff; font-size: 0.9rem; margin-top: 8px;">→ Mostra <strong>db hits</strong> (leituras no banco) e <strong>rows</strong> processadas em cada etapa. Quanto menos db hits, mais eficiente a query!</p>
+            </div>
+
+            <div class="feedback-card">
+                <h4>🛠️ APOC — A caixa de ferramentas do Neo4j</h4>
+                <p style="color: #c9b8ff; margin-bottom: 12px;">APOC (Awesome Procedures On Cypher) é uma biblioteca de procedimentos que o Neo4j não tem nativamente.</p>
+                <div class="code-container">
+                    <pre><code class="language-cypher">// Importar dados de um JSON externo
+CALL apoc.load.json("file:///alunos.json") YIELD value
+MERGE (a:Aluno {matricula: value.matricula})
+SET a.nome = value.nome, a.idade = value.idade
+
+// Exportar dados do grafo para JSON
+CALL apoc.export.json.query(
+  "MATCH (a:Aluno) RETURN a",
+  "alunos_export.json",
+  {}
+)
+
+// Algoritmos de centralidade (PageRank dos alunos)
+CALL gds.pageRank.stream("alunos-graph")
+YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).nome AS aluno, score
+ORDER BY score DESC</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Feedback — Padrões e Anti-patterns -->
+        <div class="slide">
+            <h2><span class="emoji">💡</span>Feedback: Padrões Preciosos e Anti-Padrões</h2>
+
+            <div class="two-column">
+                <div>
+                    <h3 style="color: #80ffb4;">✅ Boas Práticas</h3>
+
+                    <div class="concept-item">
+                        <strong>MERGE antes de CREATE</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Sempre use MERGE para evitar nós duplicados ao popular o banco. A Tia Teteca já aparece duas vezes se você usar CREATE sem cuidado!</span>
+                        <div class="code-container" style="margin-top: 8px;">
+                            <pre><code class="language-cypher">MERGE (a:Aluno {matricula: "2024001"})
+ON CREATE SET a.nome = "Ze da Manga"
+ON MATCH SET a.ultimo_acesso = timestamp()</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="concept-item">
+                        <strong>Sempre filtre com propriedades únicas</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Use matricula, registro ou id único — nunca só o nome (pode haver dois "Ze da Manga"!).</span>
+                    </div>
+
+                    <div class="concept-item">
+                        <strong>DETACH DELETE com cautela</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Sempre faça MATCH + RETURN antes de DETACH DELETE. O que foi deletado, não volta. Nem o Toco de Vassoura.</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 style="color: #ff8a80;">❌ Anti-Padrões</h3>
+
+                    <div class="concept-item" style="border-left-color: #ff8a80;">
+                        <strong>Consulta sem label no MATCH</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Isso varre TODOS os nós do banco:</span>
+                        <div class="code-container" style="margin-top: 8px;">
+                            <pre><code class="language-cypher">// ❌ Ruim — sem label
+MATCH (n {nome: "Ze da Manga"}) RETURN n
+
+// ✅ Bom — com label
+MATCH (a:Aluno {nome: "Ze da Manga"}) RETURN a</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="concept-item" style="border-left-color: #ff8a80;">
+                        <strong>Caminhos sem profundidade limitada</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Relacionamento <code>[:AMIGO_DE*]</code> sem limite pode travar o banco em grafos grandes. Use <code>[:AMIGO_DE*1..3]</code> para limitar a 3 saltos.</span>
+                    </div>
+
+                    <div class="concept-item" style="border-left-color: #ff8a80;">
+                        <strong>Criar relacionamentos sem checar duplicata</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Se rodar o script de amizades duas vezes, o Zé da Manga vai ter 4 amizades com o Zé da Couve. Use MERGE no relacionamento!</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concept-box" style="margin-top: 20px;">
+                <h3>🎯 Mapa Mental dos Relacionamentos do Banco Escolar</h3>
+                <div class="graph-visual">
+                    <span class="node-visual">:Professor</span>
+                    <span class="rel-visual">LECIONA</span>
+                    <span class="node-visual">:Disciplina</span>
+                    <span class="rel-visual">TIROU_NOTA</span>
+                    <span class="node-visual">:Aluno</span>
+                    <br>
+                    <span class="node-visual">:Aluno</span>
+                    <span class="rel-visual">MATRICULADO_EM</span>
+                    <span class="node-visual">:Turma</span>
+                    <span class="rel-visual">MINISTRADA_EM</span>
+                    <span class="node-visual">:Disciplina</span>
+                    <br>
+                    <span class="node-visual">:Aluno</span>
+                    <span class="rel-visual">AMIGO_DE</span>
+                    <span class="node-visual">:Aluno</span>
+                    <br>
+                    <span class="node-visual">:Diretora</span>
+                    <span class="rel-visual">DIRIGE</span>
+                    <span class="node-visual">:Escola</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Slide Final -->
+        <div class="slide">
+            <h2><span class="emoji">🎓</span>Conclusão — Você é agora mestre do Grafo Escolar!</h2>
+
+            <div class="concept-box">
+                <h3>📋 O que construímos hoje:</h3>
+                <div class="three-column" style="margin-top: 15px;">
+                    <div class="concept-item" style="text-align: center;">
+                        <div style="font-size: 2rem;">🏫</div>
+                        <strong>Banco Escolar</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">5 labels, 7 tipos de relacionamento, 8 alunos lendários</span>
+                    </div>
+                    <div class="concept-item" style="text-align: center;">
+                        <div style="font-size: 2rem;">🟡</div>
+                        <strong>8 Exercícios Simples</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">MATCH, WHERE, ORDER BY, count(), filtros em relacionamentos</span>
+                    </div>
+                    <div class="concept-item" style="text-align: center;">
+                        <div style="font-size: 2rem;">🔴</div>
+                        <strong>7 Exercícios Avançados</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Padrões duplos, avg+CASE, recomendação, shortestPath, OPTIONAL MATCH</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="two-column" style="margin-top: 20px;">
+                <div class="feedback-card">
+                    <h4>🌟 Personagens imortalizados no grafo:</h4>
+                    <ul>
+                        <li>🥭 <strong>Zé da Manga</strong> — nota 4.5 em Matemática (eterno fundão)</li>
+                        <li>🥬 <strong>Zé da Couve</strong> — aprovado em Mat com 7.8 (mano do Manga)</li>
+                        <li>👴 <strong>Seu Crispim</strong> — craque em Português com 9.2</li>
+                        <li>👟 <strong>Mariazinha Pé de Pano</strong> — 8.0, estudiosa discreta</li>
+                        <li>🥔 <strong>João Batatinha</strong> — 5.5 em Ciências, na corda bamba</li>
+                        <li>⭐ <strong>Pretinha do Norte</strong> — 9.8, top da turma!</li>
+                        <li>🧹 <strong>Toco de Vassoura</strong> — retido na turma 2A... de novo</li>
+                    </ul>
+                </div>
+                <div class="feedback-card">
+                    <h4>👩‍🏫 Professores lendários:</h4>
+                    <ul>
+                        <li>📐 <strong>Tia Teteca</strong> — Matemática, mão de ferro desde 2010</li>
+                        <li>📝 <strong>Toninho Catarino</strong> — Português, o da redação obrigatória</li>
+                        <li>🌿 <strong>Brígida das Couves</strong> — Ciências, ama experimentos</li>
+                        <li>📜 <strong>Nego Bom</strong> — História, decano da escola desde 2008</li>
+                        <li>👑 <strong>Dona Filó</strong> — Diretora, a lei máxima da escola</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="success" style="margin-top: 20px; text-align: center; font-size: 1.1rem;">
+                <strong>🚀 Próximos passos:</strong> Experimente o Neo4j GDS (Graph Data Science) para rodar algoritmos de PageRank, detecção de comunidades e predição de links no seu banco escolar!
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; color: #c9b8ff; font-size: 1rem;">
+                <p>🧩 <strong>Aula 07</strong> — Neo4j na Prática: Banco de Dados Escolar</p>
+                <p style="margin-top: 8px; font-size: 0.9rem;">Prof. Mesc. Diego Ramos Inácio — Univassouras 2026</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Navegação -->
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo →</button>
+    </div>
+
+    <div class="slide-counter">
+        <span id="slideCounter">1 / 14</span>
+    </div>
+
+    <div class="aula-badge">Aula 07</div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            slides.forEach(s => s.classList.remove('active'));
+            if (n >= totalSlides) currentSlide = 0;
+            if (n < 0) currentSlide = totalSlides - 1;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function changeSlide(dir) {
+            currentSlide += dir;
+            showSlide(currentSlide);
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft')  changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+            if (e.key === 'Home') { currentSlide = 0; showSlide(0); }
+            if (e.key === 'End')  { currentSlide = totalSlides - 1; showSlide(currentSlide); }
+        });
+
+        showSlide(0);
+    </script>
+</body>
+</html>
