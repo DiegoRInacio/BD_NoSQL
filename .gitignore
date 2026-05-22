@@ -4,3 +4,4 @@
 /.tmp_docx_extract_text
 *ipynb
 *.ipynb_checkpoints
+!migracao_pg_neo4j.ipynb

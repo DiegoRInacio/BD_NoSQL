@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migração Relacional → NoSQL — Aula 08</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .slide.active { display: block; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #f093fb, #f5576c, #fda085);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            color: #f093fb;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h3 { font-size: 1.6rem; margin: 20px 0 15px; color: #fda085; }
+        h4 { font-size: 1.2rem; color: #f5576c; margin-bottom: 10px; }
+
+        .emoji { font-size: 2rem; }
+
+        .code-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #f093fb;
+        }
+
+        .code-title {
+            color: #fda085;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        pre { margin: 0 !important; font-size: 0.85rem; line-height: 1.5; }
+
+        .concept-box {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 15px 0;
+            border-left: 5px solid #fda085;
+        }
+
+        .concept-item {
+            margin: 12px 0;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #f093fb;
+        }
+
+        .concept-item strong { color: #f093fb; }
+
+        .notebook-ref {
+            background: rgba(1, 139, 255, 0.15);
+            border: 2px solid rgba(1, 139, 255, 0.4);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            color: #7dd3fc;
+        }
+
+        .notebook-ref strong { color: #38bdf8; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        th { background: rgba(240, 147, 251, 0.25); color: #f093fb; font-weight: bold; }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(240, 147, 251, 0.2);
+            color: white;
+            border: 1px solid rgba(240, 147, 251, 0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover { background: rgba(240, 147, 251, 0.4); transform: translateY(-2px); }
+        .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(240, 147, 251, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(240, 147, 251, 0.3);
+        }
+
+        .aula-badge {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, rgba(240, 147, 251, 0.3) 0%, rgba(245, 87, 108, 0.2) 100%);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #f093fb;
+            font-weight: bold;
+        }
+
+        .warning {
+            background: rgba(255, 200, 50, 0.15);
+            border: 1px solid rgba(255, 200, 50, 0.4);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 12px 0;
+            color: #ffe58f;
+        }
+
+        .success {
+            background: rgba(0, 255, 128, 0.1);
+            border: 1px solid rgba(0, 255, 128, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 12px 0;
+            color: #80ffb4;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin: 15px 0;
+        }
+
+        .three-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .node-visual {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 50px;
+            margin: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 0 15px rgba(240, 147, 251, 0.5);
+        }
+
+        .rel-visual {
+            display: inline-block;
+            background: rgba(253, 160, 133, 0.2);
+            color: #fda085;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin: 0 8px;
+            border: 2px solid #fda085;
+            font-size: 0.85rem;
+        }
+
+        .table-visual {
+            display: inline-block;
+            background: linear-gradient(135deg, #336791, #1a4a6b);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            margin: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .fk-visual {
+            display: inline-block;
+            background: rgba(51, 103, 145, 0.2);
+            color: #7dd3fc;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin: 0 8px;
+            border: 2px dashed #7dd3fc;
+            font-size: 0.85rem;
+        }
+
+        .graph-visual {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 15px 0;
+            text-align: center;
+            border: 2px solid rgba(240, 147, 251, 0.3);
+            line-height: 2.5;
+        }
+
+        .feedback-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(240, 147, 251, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 12px 0;
+        }
+
+        .feedback-card h4 { color: #fda085; margin-bottom: 12px; }
+
+        .phase-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .arrow-right {
+            display: inline-block;
+            color: #fda085;
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin: 0 12px;
+            vertical-align: middle;
+        }
+
+        ul { margin: 12px 0; padding-left: 20px; }
+        li { margin: 8px 0; line-height: 1.6; }
+
+        @media (max-width: 768px) {
+            .two-column, .three-column { grid-template-columns: 1fr; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.7rem; }
+            .slide { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Slide 1: Título -->
+        <div class="slide active">
+            <h1>Migração Relacional → NoSQL</h1>
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="font-size: 3rem; margin: 15px 0;">🗄️ → 🔵</div>
+                <h2 style="justify-content: center; margin-bottom: 10px;">PostgreSQL → Neo4j com Python</h2>
+                <div style="font-size: 1.05rem; color: #c9b8ff; line-height: 1.8;">
+                    <p>Conceitos · Mapeamento · Migração em Batch · Performance Comparada</p>
+                </div>
+            </div>
+
+            <div class="graph-visual">
+                <span class="table-visual">autores</span>
+                <span class="fk-visual">autor_id FK</span>
+                <span class="table-visual">livros</span>
+                <span class="fk-visual">categoria_id FK</span>
+                <span class="table-visual">categorias</span>
+                <br>
+                <span style="color:#fda085; font-size:1.5rem;">↓ migração ↓</span>
+                <br>
+                <span class="node-visual">:Autor</span>
+                <span class="rel-visual">←[:ESCRITO_POR]—</span>
+                <span class="node-visual">:Livro</span>
+                <span class="rel-visual">—[:PERTENCE_A]→</span>
+                <span class="node-visual">:Categoria</span>
+            </div>
+
+            <div class="concept-box">
+                <h3>🎯 O que você vai aprender hoje:</h3>
+                <ul>
+                    <li>Por que o modelo relacional tem dificuldades com relacionamentos profundos</li>
+                    <li>Os 5 conceitos centrais do mapeamento Relacional → Grafo</li>
+                    <li>Como migrar dados em Python usando <strong>UNWIND + MERGE</strong></li>
+                    <li>Por que a tabela de junção vira um relacionamento com propriedades</li>
+                    <li>Comparação de performance: SQL com JOINs vs. Cypher com traversal</li>
+                </ul>
+            </div>
+
+            <div class="notebook-ref">
+                <strong>📓 Notebook complementar:</strong> <code>Códigos/migracao_pg_neo4j.ipynb</code> — execute o código Python completo enquanto acompanha os slides!
+            </div>
+        </div>
+
+        <!-- Slide 2: O Problema dos JOINs -->
+        <div class="slide">
+            <h2><span class="emoji">😤</span>O Problema: JOINs em Cascata</h2>
+
+            <div class="concept-box">
+                <h3>A pergunta inocente: "Quem mais comprou livros do mesmo autor que João?"</h3>
+                <div class="two-column" style="margin-top: 15px;">
+                    <div>
+                        <h4>SQL — 6 JOINs necessários</h4>
+                        <div class="code-container">
+                            <pre><code class="language-sql">SELECT DISTINCT c2.nome
+FROM clientes c1
+JOIN pedidos p1       ON p1.cliente_id = c1.id
+JOIN itens_pedido ip1 ON ip1.pedido_id = p1.id
+JOIN livros l1        ON l1.id = ip1.livro_id
+JOIN autores a        ON a.id = l1.autor_id
+JOIN livros l2        ON l2.autor_id = a.id
+JOIN itens_pedido ip2 ON ip2.livro_id = l2.id
+JOIN pedidos p2       ON p2.id = ip2.pedido_id
+JOIN clientes c2      ON c2.id = p2.cliente_id
+WHERE c1.nome = 'João'
+  AND c2.id != c1.id</code></pre>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>Cypher — traversal natural</h4>
+                        <div class="code-container">
+                            <pre><code class="language-cypher">MATCH (c1:Cliente {nome:'João'})
+  <-[:FEITO_POR]-(p1:Pedido)
+  -[:CONTEM]->(l1:Livro)
+  -[:ESCRITO_POR]->(a:Autor)
+  <-[:ESCRITO_POR]-(l2:Livro)
+  <-[:CONTEM]-(p2:Pedido)
+  -[:FEITO_POR]->(c2:Cliente)
+WHERE c2 <> c1
+RETURN DISTINCT c2.nome</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="concept-item">
+                    <strong>Banco Relacional — como funciona</strong><br>
+                    <span style="color:#c9b8ff; font-size:0.9rem;">O planner SQL precisa calcular o produto cartesiano de cada JOIN e depois filtrar. Com 6 JOINs e tabelas grandes, o custo cresce <em>exponencialmente</em> com a profundidade.</span>
+                </div>
+                <div class="concept-item">
+                    <strong>Banco de Grafos — como funciona</strong><br>
+                    <span style="color:#c9b8ff; font-size:0.9rem;">O Neo4j percorre os <em>ponteiros físicos</em> dos relacionamentos. Cada hop custa O(1) — não importa o tamanho total do banco, só o tamanho do subgrafo percorrido.</span>
+                </div>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Regra prática:</strong> Se sua query precisa de mais de 3 JOINs entre dados que são <em>naturalmente relacionados</em>, é um sinal forte de que o modelo de grafos pode ser mais adequado.
+            </div>
+        </div>
+
+        <!-- Slide 3: Quando Migrar? -->
+        <div class="slide">
+            <h2><span class="emoji">🤔</span>Quando Faz Sentido Migrar?</h2>
+
+            <div class="two-column">
+                <div>
+                    <h3 style="color:#80ffb4;">✅ Migre para Neo4j quando...</h3>
+                    <div class="concept-item">
+                        <strong>Relacionamentos são o dado</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Redes sociais, recomendações, grafos de conhecimento, supply chain, detecção de fraude — o valor está em quem conhece quem.</span>
+                    </div>
+                    <div class="concept-item">
+                        <strong>Hierarquias e caminhos</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Árvores organizacionais, dependências de pacotes, rotas geográficas — consultas de caminho mais curto são nativas no Neo4j.</span>
+                    </div>
+                    <div class="concept-item">
+                        <strong>Schema evolui com frequência</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Adicionar um tipo de relacionamento novo não requer ALTER TABLE. Apenas crie os relacionamentos novos.</span>
+                    </div>
+                    <div class="concept-item">
+                        <strong>Queries ad-hoc em profundidade</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Atravessar 5, 10, 20 saltos com <code>[:TIPO*1..N]</code> é eficiente. Em SQL seria recursão CTE complexa.</span>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="color:#ff8a80;">❌ Mantenha o Relacional quando...</h3>
+                    <div class="concept-item" style="border-left-color:#ff8a80;">
+                        <strong>Relatórios e agregações tabulares</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">GROUP BY, SUM, COUNT em milhões de linhas — PostgreSQL com índices bem ajustados ainda vence nisso.</span>
+                    </div>
+                    <div class="concept-item" style="border-left-color:#ff8a80;">
+                        <strong>Transações ACID complexas</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Operações financeiras com rollback, constraints de integridade estritas, auditorias — o modelo relacional foi feito para isso.</span>
+                    </div>
+                    <div class="concept-item" style="border-left-color:#ff8a80;">
+                        <strong>Dados são planos (poucas FKs)</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Se as tabelas têm pouco relacionamento entre si, o overhead do modelo de grafos não compensa.</span>
+                    </div>
+                    <div class="concept-item" style="border-left-color:#ff8a80;">
+                        <strong>Equipe já domina SQL</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Migração tem custo de aprendizagem. Só troque quando o benefício técnico justificar.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="success">
+                <strong>💡 Abordagem híbrida:</strong> Muitas empresas usam <em>PostgreSQL + Neo4j juntos</em> — o relacional para transações e relatórios, o grafo para recomendações e análise de rede. Não precisa ser uma substituição total!
+            </div>
+        </div>
+
+        <!-- Slide 4: Os 5 Conceitos Centrais -->
+        <div class="slide">
+            <h2><span class="emoji">🗺️</span>Os 5 Conceitos Centrais do Mapeamento</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Conceito Relacional</th>
+                        <th>→</th>
+                        <th>Equivalente em Grafo</th>
+                        <th>Exemplo da Livraria</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="phase-badge">1</span></td>
+                        <td><strong>Tabela</strong></td>
+                        <td>→</td>
+                        <td><span class="highlight">Label</span></td>
+                        <td><code>autores</code> → <code>:Autor</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="phase-badge">2</span></td>
+                        <td><strong>Linha</strong></td>
+                        <td>→</td>
+                        <td><span class="highlight">Nó</span></td>
+                        <td><code>{id:1, nome:'Ana'}</code> → <code>(a:Autor {id:1})</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="phase-badge">3</span></td>
+                        <td><strong>Coluna</strong></td>
+                        <td>→</td>
+                        <td><span class="highlight">Propriedade</span></td>
+                        <td><code>nome VARCHAR(120)</code> → <code>.nome</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="phase-badge">4</span></td>
+                        <td><strong>Chave Estrangeira</strong></td>
+                        <td>→</td>
+                        <td><span class="highlight">Relacionamento</span></td>
+                        <td><code>autor_id INT REFERENCES</code> → <code>-[:ESCRITO_POR]-></code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="phase-badge">5</span></td>
+                        <td><strong>Tabela de Junção</strong></td>
+                        <td>→</td>
+                        <td><span class="highlight">Rel. com Propriedades</span></td>
+                        <td><code>itens_pedido(qtd, preco)</code> → <code>-[:CONTEM {qtd, preco}]-></code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="concept-box" style="margin-top: 20px;">
+                <h3>💡 O conceito mais importante: Tabela de Junção</h3>
+                <p style="color:#c9b8ff; margin-bottom:15px;">A <strong>tabela de junção</strong> (<em>junction table</em>) é o padrão mais importante de migrar, pois ela <em>desaparece</em> como tabela e vira um relacionamento com propriedades:</p>
+                <div class="two-column">
+                    <div>
+                        <h4>SQL — 3 tabelas envolvidas</h4>
+                        <div class="code-container">
+                            <pre><code class="language-sql">-- pedidos
+-- itens_pedido (id, pedido_id, livro_id,
+--               quantidade, preco_unitario)
+-- livros
+
+SELECT p.id, l.titulo, ip.quantidade
+FROM pedidos p
+JOIN itens_pedido ip ON ip.pedido_id = p.id
+JOIN livros l        ON l.id = ip.livro_id</code></pre>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>Cypher — relacionamento carrega os dados</h4>
+                        <div class="code-container">
+                            <pre><code class="language-cypher">-- itens_pedido virou o relacionamento CONTEM
+-- quantidade e preco_unitario ficam no rel.
+
+MATCH (p:Pedido)-[ip:CONTEM]->(l:Livro)
+RETURN p.id, l.titulo, ip.quantidade</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Schema da Livraria — Relacional -->
+        <div class="slide">
+            <h2><span class="emoji">🗄️</span>Schema Relacional — Livraria Online</h2>
+            <p style="color:#c9b8ff; margin-bottom:20px;">O banco de origem que vamos migrar: <strong>6 tabelas</strong>, <strong>4 chaves estrangeiras</strong></p>
+
+            <div class="graph-visual" style="line-height: 2.2; text-align: left; padding: 30px;">
+                <div style="margin-bottom: 10px;">
+                    <span class="table-visual">autores</span>
+                    <span style="color:#7dd3fc; font-size:0.85rem;">  id, nome, nacionalidade, ano_nascimento</span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <span class="table-visual">categorias</span>
+                    <span style="color:#7dd3fc; font-size:0.85rem;">  id, nome, descricao</span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <span class="table-visual">livros</span>
+                    <span style="color:#7dd3fc; font-size:0.85rem;">  id, titulo, isbn, preco, ano_publicacao,</span>
+                    <span class="fk-visual">autor_id → autores</span>
+                    <span class="fk-visual">categoria_id → categorias</span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <span class="table-visual">clientes</span>
+                    <span style="color:#7dd3fc; font-size:0.85rem;">  id, nome, email, cidade, estado, membro_desde</span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <span class="table-visual">pedidos</span>
+                    <span style="color:#7dd3fc; font-size:0.85rem;">  id, data_pedido, total, status,</span>
+                    <span class="fk-visual">cliente_id → clientes</span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <span class="table-visual" style="background: linear-gradient(135deg, #b45309, #78350f);">itens_pedido</span>
+                    <span style="color:#fda085; font-size:0.85rem;">  ← TABELA DE JUNÇÃO →</span>
+                    <span class="fk-visual">pedido_id → pedidos</span>
+                    <span class="fk-visual">livro_id → livros</span>
+                    <span style="color:#7dd3fc; font-size:0.85rem;">  + quantidade, preco_unitario</span>
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="concept-item">
+                    <strong>Contagem de registros no experimento</strong><br>
+                    <span style="color:#c9b8ff; font-size:0.9rem;">50 autores · 20 categorias · 500 livros · 1.000 clientes · 2.000 pedidos · ~5.000 itens</span>
+                </div>
+                <div class="concept-item">
+                    <strong>Por que esse domínio?</strong><br>
+                    <span style="color:#c9b8ff; font-size:0.9rem;">A livraria tem FKs simples E uma tabela de junção — os dois padrões mais comuns em qualquer migração real.</span>
+                </div>
+            </div>
+
+            <div class="notebook-ref">
+                <strong>📓 Notebook seção 4:</strong> Funções <code>criar_schema_postgres()</code> e <code>popular_postgres()</code> — cria o schema e gera dados sintéticos com Faker.
+            </div>
+        </div>
+
+        <!-- Slide 6: O Grafo da Livraria -->
+        <div class="slide">
+            <h2><span class="emoji">🔵</span>O Grafo da Livraria — Resultado da Migração</h2>
+            <p style="color:#c9b8ff; margin-bottom:15px;">Como o banco fica no Neo4j após a migração: <strong>5 labels</strong>, <strong>4 tipos de relacionamento</strong></p>
+
+            <div class="graph-visual" style="line-height: 2.8;">
+                <span class="node-visual">:Autor</span>
+                <span class="rel-visual">←[:ESCRITO_POR]—</span>
+                <span class="node-visual">:Livro</span>
+                <span class="rel-visual">—[:PERTENCE_A]→</span>
+                <span class="node-visual">:Categoria</span>
+                <br>
+                <span class="node-visual">:Livro</span>
+                <span class="rel-visual">←[:CONTEM {qtd, preco}]—</span>
+                <span class="node-visual">:Pedido</span>
+                <span class="rel-visual">—[:FEITO_POR]→</span>
+                <span class="node-visual">:Cliente</span>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Relacionamento</th>
+                        <th>De → Para</th>
+                        <th>Propriedades</th>
+                        <th>Origem no SQL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="highlight">ESCRITO_POR</span></td>
+                        <td>Livro → Autor</td>
+                        <td>—</td>
+                        <td><code>livros.autor_id FK</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">PERTENCE_A</span></td>
+                        <td>Livro → Categoria</td>
+                        <td>—</td>
+                        <td><code>livros.categoria_id FK</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">FEITO_POR</span></td>
+                        <td>Pedido → Cliente</td>
+                        <td>—</td>
+                        <td><code>pedidos.cliente_id FK</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">CONTEM</span></td>
+                        <td>Pedido → Livro</td>
+                        <td>quantidade, preco_unitario</td>
+                        <td><code>itens_pedido</code> (tabela de junção)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="success">
+                <strong>✅ Note:</strong> A tabela <code>itens_pedido</code> não gerou nenhum nó novo! Ela se tornou o relacionamento <code>CONTEM</code>, carregando <code>quantidade</code> e <code>preco_unitario</code> como propriedades da aresta.
+            </div>
+        </div>
+
+        <!-- Slide 7: Ambiente Python -->
+        <div class="slide">
+            <h2><span class="emoji">🐍</span>Ambiente Python — Conexões e Dependências</h2>
+
+            <div class="concept-box">
+                <h3>📦 Bibliotecas necessárias</h3>
+                <div class="code-container">
+                    <div class="code-title">Instalação</div>
+                    <pre><code class="language-bash">pip install psycopg2-binary neo4j faker pandas matplotlib seaborn tqdm psutil</code></pre>
+                </div>
+                <div class="three-column" style="margin-top: 15px;">
+                    <div class="concept-item">
+                        <strong>psycopg2-binary</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.85rem;">Driver Python para PostgreSQL. Suporta <code>execute_batch()</code> para inserções em lote.</span>
+                    </div>
+                    <div class="concept-item">
+                        <strong>neo4j</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.85rem;">Driver oficial Neo4j para Python. <code>GraphDatabase.driver()</code> gerencia o pool de conexões bolt.</span>
+                    </div>
+                    <div class="concept-item">
+                        <strong>faker (pt_BR)</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.85rem;">Gera dados sintéticos realistas em português: nomes, cidades, estados.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">🔌 Configuração das conexões</div>
+                <pre><code class="language-python">import psycopg2
+from psycopg2.extras import execute_batch
+from neo4j import GraphDatabase
+
+# PostgreSQL
+PG_CONFIG = {
+    'host': 'localhost', 'port': 5432,
+    'dbname': 'postgres', 'user': 'postgres', 'password': 'bd_aula'
+}
+
+# Neo4j (protocolo Bolt — mais eficiente que HTTP)
+NEO4J_URI      = 'bolt://localhost:7687'
+NEO4J_USER     = 'neo4j'
+NEO4J_PASSWORD = 'qual sera minha senha' #<-- Altere para a senha do seu Neo4j
+
+# Testar Neo4j
+driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+driver.verify_connectivity()   # lança exceção se não conectar
+driver.close()
+print("Ambas as conexões OK!")</code></pre>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ bolt:// vs neo4j://</strong> — Use <code>bolt://</code> para conectar a uma instância local única. Use <code>neo4j://</code> para clusters com roteamento automático (Neo4j Aura, clusters de produção).
+            </div>
+        </div>
+
+        <!-- Slide 8: Fase 1 — Preparação -->
+        <div class="slide">
+            <h2><span class="emoji">⚙️</span>Fase 1 — Preparação do Neo4j</h2>
+            <p style="color:#c9b8ff; margin-bottom:20px;">Antes de migrar qualquer dado, faça isso: limpar o banco e criar índices.</p>
+
+            <div class="feedback-card">
+                <h4>🔑 Por que criar índices ANTES de migrar?</h4>
+                <p style="color:#c9b8ff; margin-bottom:12px;">Na Fase 2 (relacionamentos), o Cypher precisa fazer <code>MATCH (n:Livro {id: X})</code> para cada relacionamento. Sem índice, isso é um <strong>full scan</strong> em todos os nós :Livro — O(N) por relacionamento.</p>
+                <p style="color:#c9b8ff; margin-bottom:12px;">Com índice na propriedade <code>id</code>, cada MATCH é O(1) — acesso direto. Para 500 livros e 5.000 relacionamentos, a diferença é de segundos vs. horas.</p>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">Neo4j — Limpeza e criação de índices</div>
+                <pre><code class="language-python">def preparar_neo4j(uri, user, password):
+    driver = GraphDatabase.driver(uri, auth=(user, password))
+    with driver.session() as s:
+        # Limpar tudo (cuidado em produção!)
+        s.run("MATCH (n) DETACH DELETE n")
+
+        # Criar índices nas propriedades que serão usadas no MATCH
+        for label, prop in [('Autor','id'), ('Categoria','id'),
+                             ('Livro','id'), ('Cliente','id'), ('Pedido','id')]:
+            s.run(f"CREATE INDEX {label.lower()}_id "
+                  f"IF NOT EXISTS FOR (n:{label}) ON (n.{prop})")
+    driver.close()</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div class="concept-item">
+                    <strong>IF NOT EXISTS</strong><br>
+                    <span style="color:#c9b8ff; font-size:0.9rem;">Torna o script idempotente — pode ser executado múltiplas vezes sem erro.</span>
+                </div>
+                <div class="concept-item">
+                    <strong>Verificar índices criados</strong><br>
+                    <div class="code-container" style="margin-top: 8px;">
+                        <pre><code class="language-cypher">SHOW INDEXES YIELD name, labelsOrTypes, properties, state
+WHERE state = 'ONLINE'</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Fase 2 — Migrando Nós -->
+        <div class="slide">
+            <h2><span class="emoji">🔵</span>Fase 2 — Migrando Nós com UNWIND</h2>
+
+            <div class="concept-box">
+                <h3>O padrão UNWIND + MERGE — o coração da migração</h3>
+                <div class="code-container">
+                    <div class="code-title">Padrão genérico para qualquer entidade</div>
+                    <pre><code class="language-python">def migrar_entidade(pg_rows, label, cypher_template, driver, batch_size=500):
+    """
+    pg_rows    : lista de dicts lida do PostgreSQL
+    label      : nome do label Neo4j (ex: 'Autor')
+    cypher_template: query UNWIND com $lote
+    """
+    with driver.session() as session:
+        for i in range(0, len(pg_rows), batch_size):
+            lote = pg_rows[i : i + batch_size]
+            session.run(cypher_template, lote=lote)</code></pre>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">Exemplo — Migrando :Livro do PostgreSQL para Neo4j</div>
+                <pre><code class="language-python"># 1. Ler do PostgreSQL
+conn = psycopg2.connect(**PG_CONFIG)
+cur  = conn.cursor()
+cur.execute("SELECT id, titulo, isbn, preco, avaliacao_media FROM livros")
+livros = [{'id': r[0], 'titulo': r[1], 'isbn': r[2],
+           'preco': float(r[3]), 'avaliacao_media': r[4]}
+          for r in cur.fetchall()]
+
+# 2. Criar nós no Neo4j com UNWIND (processa o batch de uma vez)
+cypher = """
+    UNWIND $lote AS row
+    MERGE (l:Livro {id: row.id})
+    SET l.titulo = row.titulo,
+        l.isbn   = row.isbn,
+        l.preco  = row.preco,
+        l.avaliacao_media = row.avaliacao_media
+"""
+with driver.session() as s:
+    s.run(cypher, lote=livros)</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div class="concept-item">
+                    <strong>UNWIND $lote AS row</strong><br>
+                    <span style="color:#c9b8ff; font-size:0.9rem;">Desempacota a lista Python e cria/atualiza um nó para cada elemento. Muito mais eficiente do que um MERGE por chamada.</span>
+                </div>
+                <div class="concept-item">
+                    <strong>MERGE vs. CREATE</strong><br>
+                    <span style="color:#c9b8ff; font-size:0.9rem;"><code>MERGE</code> é idempotente: se o nó já existe, atualiza. <code>CREATE</code> duplicaria em caso de re-execução. Sempre use MERGE na migração.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Fase 3 — Relacionamentos -->
+        <div class="slide">
+            <h2><span class="emoji">🔗</span>Fase 3 — Migrando Relacionamentos (FKs)</h2>
+
+            <div class="concept-box">
+                <h3>Convertendo FK → Relacionamento</h3>
+                <p style="color:#c9b8ff; margin-bottom: 15px;">Para cada FK, lemos os IDs dos dois lados e criamos uma aresta. O índice garante que o MATCH seja rápido.</p>
+                <div class="code-container">
+                    <div class="code-title">Padrão: FK simples (livros.autor_id)</div>
+                    <pre><code class="language-python"># Ler FKs do PostgreSQL
+cur.execute("SELECT id, autor_id FROM livros")
+rels = [{'l': r[0], 'a': r[1]} for r in cur.fetchall()]
+
+# Criar relacionamentos com MATCH + MERGE
+cypher = """
+    UNWIND $lote AS row
+    MATCH (l:Livro    {id: row.l})   -- usa o índice livro_id
+    MATCH (a:Autor    {id: row.a})   -- usa o índice autor_id
+    MERGE (l)-[:ESCRITO_POR]->(a)
+"""
+with driver.session() as s:
+    s.run(cypher, lote=rels)</code></pre>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-title">Tabela de junção com propriedades (itens_pedido)</div>
+                <pre><code class="language-python"># Ler a tabela de juncao inteira
+cur.execute("SELECT pedido_id, livro_id, quantidade, preco_unitario FROM itens_pedido")
+itens = [{'p': r[0], 'l': r[1], 'qtd': r[2], 'preco': float(r[3])}
+         for r in cur.fetchall()]
+
+# A tabela de juncao DESAPARECE — vira um relacionamento com props
+cypher = """
+    UNWIND $lote AS row
+    MATCH (p:Pedido {id: row.p})
+    MATCH (l:Livro  {id: row.l})
+    MERGE (p)-[r:CONTEM {livro_id: row.l}]->(l)
+    SET r.quantidade      = row.qtd,
+        r.preco_unitario  = row.preco
+"""</code></pre>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Cuidado com o MERGE de relacionamentos:</strong> Inclua uma propriedade identificadora no MERGE (ex: <code>CONTEM {livro_id: row.l}</code>) para evitar relacionamentos duplicados caso o script seja re-executado.
+            </div>
+        </div>
+
+        <!-- Slide 11: Validação -->
+        <div class="slide">
+            <h2><span class="emoji">✅</span>Validando a Migração</h2>
+            <p style="color:#c9b8ff; margin-bottom:20px;">Após migrar, compare as contagens entre os dois bancos para garantir integridade.</p>
+
+            <div class="code-container">
+                <div class="code-title">Validação cruzada: PostgreSQL ↔ Neo4j</div>
+                <pre><code class="language-python">def validar(pg_config, neo4j_uri, user, password):
+    conn   = psycopg2.connect(**pg_config)
+    cur    = conn.cursor()
+    driver = GraphDatabase.driver(neo4j_uri, auth=(user, password))
+
+    checks = [
+        # (descricao, sql_count, cypher_count)
+        ('Autores',    'SELECT COUNT(*) FROM autores',
+                       'MATCH (n:Autor) RETURN count(n) AS c'),
+        ('Livros',     'SELECT COUNT(*) FROM livros',
+                       'MATCH (n:Livro) RETURN count(n) AS c'),
+        ('ESCRITO_POR','SELECT COUNT(*) FROM livros',
+                       'MATCH ()-[r:ESCRITO_POR]->() RETURN count(r) AS c'),
+        ('CONTEM',     'SELECT COUNT(*) FROM itens_pedido',
+                       'MATCH ()-[r:CONTEM]->() RETURN count(r) AS c'),
+    ]
+    for desc, sql, cypher in checks:
+        cur.execute(sql); pg_n = cur.fetchone()[0]
+        with driver.session() as s:
+            neo_n = s.run(cypher).single()['c']
+        status = 'OK' if pg_n == neo_n else 'DIVERGENCIA'
+        print(f"  {desc:<15} PG={pg_n:>6,}  Neo4j={neo_n:>6,}  {status}")</code></pre>
+            </div>
+
+            <div class="two-column">
+                <div class="concept-item">
+                    <strong>O que validar?</strong><br>
+                    <ul style="color:#c9b8ff; font-size:0.9rem; margin-top:8px;">
+                        <li>Contagem de nós por label</li>
+                        <li>Contagem de relacionamentos por tipo</li>
+                        <li>Propriedades críticas (ID único, email único)</li>
+                        <li>Sample: pegar 10 registros aleatórios e comparar</li>
+                    </ul>
+                </div>
+                <div class="concept-item">
+                    <strong>Contagens esperadas no Neo4j</strong><br>
+                    <ul style="color:#c9b8ff; font-size:0.9rem; margin-top:8px;">
+                        <li>50 :Autor · 20 :Categoria · 500 :Livro</li>
+                        <li>1.000 :Cliente · 2.000 :Pedido</li>
+                        <li>500 :ESCRITO_POR · 500 :PERTENCE_A</li>
+                        <li>2.000 :FEITO_POR · ~5.000 :CONTEM</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Benchmark Setup -->
+        <div class="slide">
+            <h2><span class="emoji">⏱️</span>Benchmark: SQL JOINs vs. Cypher Traversal</h2>
+
+            <div class="two-column">
+                <div>
+                    <h3>Query Q1 — Top vendidos por categoria</h3>
+                    <p style="color:#c9b8ff; font-size:0.9rem; margin-bottom:10px;">SQL: 3 JOINs · Cypher: 3 hops</p>
+                    <div class="code-container">
+                        <pre><code class="language-sql">-- SQL: 3 JOINs
+SELECT c.nome, l.titulo,
+       SUM(ip.quantidade) AS vendas
+FROM categorias c
+JOIN livros l        ON l.categoria_id = c.id
+JOIN itens_pedido ip ON ip.livro_id    = l.id
+JOIN pedidos p       ON p.id = ip.pedido_id
+WHERE p.status = 'entregue'
+GROUP BY c.nome, l.titulo
+ORDER BY vendas DESC LIMIT 10</code></pre>
+                    </div>
+                    <div class="code-container">
+                        <pre><code class="language-cypher">-- Cypher: traversal direto
+MATCH (p:Pedido {status:'entregue'})
+      -[ip:CONTEM]->(l:Livro)
+      -[:PERTENCE_A]->(c:Categoria)
+RETURN c.nome, l.titulo,
+       SUM(ip.quantidade) AS vendas
+ORDER BY vendas DESC LIMIT 10</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <h3>Query Q2 — Clientes por autor</h3>
+                    <p style="color:#c9b8ff; font-size:0.9rem; margin-bottom:10px;">SQL: 6 JOINs · Cypher: 6 hops</p>
+                    <div class="code-container">
+                        <pre><code class="language-sql">-- SQL: 6 JOINs — fica grande!
+SELECT DISTINCT c2.nome
+FROM clientes c1
+JOIN pedidos p1  ON p1.cliente_id = c1.id
+JOIN itens_pedido ip1 ON ip1.pedido_id = p1.id
+JOIN livros l1   ON l1.id = ip1.livro_id
+JOIN autores a   ON a.id = l1.autor_id
+JOIN livros l2   ON l2.autor_id = a.id
+-- ... + 2 JOINs para chegar em c2</code></pre>
+                    </div>
+                    <div class="code-container">
+                        <pre><code class="language-cypher">-- Cypher: mesma lógica, mais legível
+MATCH (c1:Cliente {id:1})
+  <-[:FEITO_POR]-(p1)-[:CONTEM]
+  ->(l1)-[:ESCRITO_POR]->(a)
+  <-[:ESCRITO_POR]-(l2)
+  <-[:CONTEM]-(p2)-[:FEITO_POR]
+  ->(c2:Cliente)
+WHERE c2 <> c1
+RETURN DISTINCT c2.nome LIMIT 20</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notebook-ref">
+                <strong>📓 Notebook seção 8:</strong> Cada query é executada <code>N_BENCH_REPS = 10</code> vezes para cálculo de média e mínimo. Isso reduz o ruído de cache e JIT.
+            </div>
+        </div>
+
+        <!-- Slide 13: Armadilhas e Boas Práticas -->
+        <div class="slide">
+            <h2><span class="emoji">💡</span>Armadilhas e Boas Práticas</h2>
+
+            <div class="two-column">
+                <div>
+                    <h3 style="color:#80ffb4;">✅ Boas Práticas</h3>
+
+                    <div class="concept-item">
+                        <strong>Sempre MERGE, nunca CREATE na migração</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">CREATE duplica se o script rodar duas vezes. MERGE é idempotente e seguro para reexecuções parciais.</span>
+                    </div>
+                    <div class="concept-item">
+                        <strong>Índices antes dos relacionamentos</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Sem índice, o MATCH nas Fases 2 e 3 faz full scan. Com índice, é O(1). Para 500 livros, a diferença pode ser de 1.000x.</span>
+                    </div>
+                    <div class="concept-item">
+                        <strong>Batching com UNWIND</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Nunca crie um nó por chamada ao driver. Use UNWIND com lotes de 500–2000 itens para minimizar o round-trip bolt.</span>
+                    </div>
+                    <div class="concept-item">
+                        <strong>Valide após cada fase</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Compare contagens PG ↔ Neo4j ao final de cada fase. Muito mais fácil de depurar do que descobrir divergência no final.</span>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="color:#ff8a80;">❌ Anti-Padrões</h3>
+
+                    <div class="concept-item" style="border-left-color:#ff8a80;">
+                        <strong>Migrar tudo de uma vez sem indexar</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Migrar nós e relacionamentos sem índice: o MATCH percorre O(N) nós para cada relacionamento. Para 500 livros e 5.000 rels = 2.500.000 scans.</span>
+                    </div>
+                    <div class="concept-item" style="border-left-color:#ff8a80;">
+                        <strong>Recriar o modelo relacional no grafo</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Migrar a tabela de junção como nó (:ItemPedido) em vez de relacionamento. Perde o benefício do modelo de grafo.</span>
+                    </div>
+                    <div class="concept-item" style="border-left-color:#ff8a80;">
+                        <strong>MATCH sem label</strong><br>
+                        <div class="code-container" style="margin-top: 8px;">
+                            <pre><code class="language-cypher">// Varre TODOS os nós
+MATCH (n {id: 42}) RETURN n
+
+// Usa o índice correto
+MATCH (n:Livro {id: 42}) RETURN n</code></pre>
+                        </div>
+                    </div>
+                    <div class="concept-item" style="border-left-color:#ff8a80;">
+                        <strong>Sem verificação de duplicatas</strong><br>
+                        <span style="color:#c9b8ff; font-size:0.9rem;">Se o processo de migração falhar e for reiniciado sem MERGE, cria duplicatas silenciosas.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Conclusão -->
+        <div class="slide">
+            <h2><span class="emoji">🎓</span>Conclusão — Você sabe migrar um banco relacional!</h2>
+
+            <div class="concept-box">
+                <h3>📋 O que cobrimos hoje:</h3>
+                <div class="three-column" style="margin-top: 15px;">
+                    <div class="concept-item" style="text-align: center;">
+                        <div style="font-size: 2rem;">🗺️</div>
+                        <strong>5 Conceitos de Mapeamento</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Tabela→Label, Linha→Nó, Coluna→Prop, FK→Rel, Junção→Rel com Props</span>
+                    </div>
+                    <div class="concept-item" style="text-align: center;">
+                        <div style="font-size: 2rem;">🐍</div>
+                        <strong>Migração em Python</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">psycopg2 + neo4j driver, UNWIND em batches, MERGE idempotente, índices antes dos rels</span>
+                    </div>
+                    <div class="concept-item" style="text-align: center;">
+                        <div style="font-size: 2rem;">⚡</div>
+                        <strong>Performance</strong><br>
+                        <span style="color: #c9b8ff; font-size: 0.9rem;">Neo4j vence em traversal profundo; PostgreSQL mantém vantagem em agregações tabulares</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feedback-card">
+                <h4>🔑 O processo de migração em 3 fases:</h4>
+                <div style="margin-top: 12px; font-size: 1rem;">
+                    <span class="phase-badge">Fase 1</span> Preparação — limpar Neo4j + criar índices nas props de busca
+                    <br><br>
+                    <span class="phase-badge">Fase 2</span> Migrar Nós — ler tabelas-entidade do PG, criar nós com <code>UNWIND + MERGE</code>
+                    <br><br>
+                    <span class="phase-badge">Fase 3</span> Migrar Relacionamentos — ler FKs e junções, criar arestas com <code>MATCH + MERGE</code>
+                    <br><br>
+                    <span class="phase-badge" style="background: linear-gradient(45deg, #80ffb4, #38bdf8);">Validação</span> Comparar contagens PG ↔ Neo4j para garantir integridade
+                </div>
+            </div>
+
+            <div class="notebook-ref" style="margin-top: 15px;">
+                <strong>📓 Pratique agora:</strong> O notebook tem o código completo de migração, validação, benchmark e um exercício final — execute célula por célula e veja os números reais de performance!
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="Códigos/migracao_pg_neo4j.ipynb" download="migracao_pg_neo4j.ipynb"
+                   style="display: inline-flex; align-items: center; gap: 10px;
+                          background: linear-gradient(45deg, #f093fb, #f5576c);
+                          color: white; padding: 14px 32px; border-radius: 30px;
+                          font-size: 1.05rem; font-weight: bold; text-decoration: none;
+                          box-shadow: 0 0 20px rgba(240,147,251,0.4);
+                          transition: all 0.3s ease;"
+                   onmouseover="this.style.transform='translateY(-3px) scale(1.04)'; this.style.boxShadow='0 0 30px rgba(240,147,251,0.6)'"
+                   onmouseout="this.style.transform='none'; this.style.boxShadow='0 0 20px rgba(240,147,251,0.4)'">
+                    ⬇️ Baixar Notebook — migracao_pg_neo4j.ipynb
+                </a>
+            </div>
+
+            <div style="text-align: center; margin-top: 25px; color: #c9b8ff; font-size: 1rem;">
+                <p>🧩 <strong>Aula 08</strong> — Migração de Bases Relacionais para NoSQL: PostgreSQL → Neo4j</p>
+                <p style="margin-top: 8px; font-size: 0.9rem;">Prof. Mesc. Diego Ramos Inácio — Univassouras 2026</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Navegação -->
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo →</button>
+    </div>
+
+    <div class="slide-counter">
+        <span id="slideCounter">1 / 14</span>
+    </div>
+
+    <div class="aula-badge">Aula 08</div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            slides.forEach(s => s.classList.remove('active'));
+            if (n >= totalSlides) currentSlide = 0;
+            if (n < 0) currentSlide = totalSlides - 1;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function changeSlide(dir) {
+            currentSlide += dir;
+            showSlide(currentSlide);
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft')  changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+            if (e.key === 'Home') { currentSlide = 0; showSlide(0); }
+            if (e.key === 'End')  { currentSlide = totalSlides - 1; showSlide(currentSlide); }
+        });
+
+        showSlide(0);
+    </script>
+</body>
+</html>
