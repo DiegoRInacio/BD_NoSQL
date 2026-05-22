@@ -5,3 +5,5 @@
 *ipynb
 *.ipynb_checkpoints
 !migracao_pg_neo4j.ipynb
+.claude/
+*.claude
