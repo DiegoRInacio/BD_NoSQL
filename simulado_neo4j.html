@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulado Neo4j — BD Não Relacional</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);background-attachment:fixed;color:#e2e8f0;min-height:100vh;padding:20px;}
+.container{max-width:860px;margin:0 auto;}
+.header{text-align:center;padding:40px 20px 20px;}
+.header h1{font-size:2.4rem;background:linear-gradient(45deg,#f093fb,#f5576c,#fda085);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;}
+.header p{color:#c9b8ff;font-size:1rem;}
+.badge-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
+.badge{padding:4px 14px;border-radius:20px;font-size:.82rem;font-weight:bold;}
+.badge-mc{background:rgba(240,147,251,.2);color:#f093fb;border:1px solid rgba(240,147,251,.4);}
+.badge-cy{background:rgba(253,160,133,.2);color:#fda085;border:1px solid rgba(253,160,133,.4);}
+.badge-q{background:rgba(201,184,255,.15);color:#c9b8ff;border:1px solid rgba(201,184,255,.3);}
+/* base de apoio drawer */
+#apoio-btn{position:fixed;bottom:90px;right:20px;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;border:none;border-radius:50px;padding:13px 20px;font-size:.88rem;font-weight:bold;cursor:pointer;z-index:900;box-shadow:0 4px 20px rgba(240,147,251,.5);transition:all .3s;white-space:nowrap;}
+#apoio-btn:hover{transform:scale(1.07);}
+#apoio-drawer{position:fixed;top:0;right:-660px;width:650px;height:100vh;background:#1a1a3e;border-left:2px solid rgba(240,147,251,.4);z-index:950;transition:right .35s ease;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.5);}
+#apoio-drawer.open{right:0;}
+#apoio-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(240,147,251,.15);border-bottom:1px solid rgba(240,147,251,.2);flex-shrink:0;}
+#apoio-head span{color:#f093fb;font-weight:bold;font-size:.95rem;}
+#apoio-close{background:none;border:none;color:#f093fb;font-size:1.4rem;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;}
+#apoio-close:hover{background:rgba(240,147,251,.2);}
+#apoio-note{padding:10px 18px;font-size:.78rem;color:#c9b8ff;background:rgba(201,184,255,.06);border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;}
+#apoio-frame{flex:1;border:none;width:100%;background:#fff;}
+#apoio-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:940;}
+#apoio-overlay.show{display:block;}
+@media(max-width:680px){#apoio-drawer{width:100%;right:-100%;}}
+/* progress */
+.prog-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin:20px 0;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#f093fb,#f5576c);border-radius:3px;transition:width .4s;}
+.prog-label{text-align:right;font-size:.78rem;color:#c9b8ff;margin-top:4px;}
+/* student form */
+.student-form{background:rgba(255,255,255,.07);border-radius:14px;padding:22px 25px;margin-bottom:24px;border:1px solid rgba(240,147,251,.2);}
+.student-form label{display:block;color:#fda085;font-weight:bold;margin-bottom:8px;font-size:.95rem;}
+.student-form input{width:100%;padding:11px 15px;background:rgba(0,0,0,.3);border:1px solid rgba(240,147,251,.3);border-radius:8px;color:#fff;font-size:1rem;outline:none;}
+.student-form input:focus{border-color:#f093fb;}
+/* question card */
+.q-card{background:rgba(255,255,255,.06);border-radius:14px;padding:24px;margin-bottom:18px;border:1px solid rgba(255,255,255,.07);border-left:4px solid #f093fb;transition:border-color .3s;}
+.q-card.cy{border-left-color:#fda085;}
+.q-card.answered-ok{border-left-color:#80ffb4;}
+.q-num{font-size:.78rem;color:#c9b8ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.q-text{font-size:1rem;line-height:1.65;color:#f0e6ff;margin-bottom:18px;}
+.q-text code{background:rgba(0,0,0,.35);padding:2px 7px;border-radius:4px;font-family:'Courier New',monospace;color:#ffd700;font-size:.88rem;}
+.q-text strong{color:#f093fb;}
+/* options */
+.opts{display:flex;flex-direction:column;gap:9px;}
+.opt{display:flex;align-items:flex-start;gap:11px;padding:11px 14px;background:rgba(0,0,0,.2);border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .2s;}
+.opt:hover{border-color:rgba(240,147,251,.4);background:rgba(240,147,251,.07);}
+.opt.selected{border-color:rgba(240,147,251,.6);background:rgba(240,147,251,.1);}
+.opt input[type=radio]{accent-color:#f093fb;width:16px;height:16px;flex-shrink:0;margin-top:2px;}
+.opt label{cursor:pointer;font-size:.93rem;color:#ddd;line-height:1.5;}
+/* cypher textarea */
+.cy-area{width:100%;min-height:90px;background:rgba(0,0,0,.4);border:1px solid rgba(253,160,133,.4);border-radius:8px;color:#ffd700;font-family:'Courier New',monospace;font-size:.88rem;padding:13px;resize:vertical;line-height:1.6;outline:none;}
+.cy-area:focus{border-color:#fda085;}
+.cy-hint{font-size:.79rem;color:#c9b8ff;margin-top:6px;font-style:italic;}
+/* submit */
+.submit-wrap{text-align:center;padding:30px 0 20px;}
+.btn-submit{background:linear-gradient(45deg,#f093fb,#f5576c);color:#fff;border:none;padding:15px 50px;border-radius:30px;font-size:1.1rem;font-weight:bold;cursor:pointer;transition:all .3s;box-shadow:0 4px 20px rgba(240,147,251,.3);}
+.btn-submit:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(240,147,251,.5);}
+/* results */
+#results-section{display:none;}
+.score-wrap{text-align:center;padding:40px 20px 20px;}
+.score-ring{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:160px;height:160px;border-radius:50%;border:5px solid;margin:10px auto 20px;}
+.score-n{font-size:3rem;font-weight:bold;line-height:1;}
+.score-sub{font-size:.85rem;color:#c9b8ff;margin-top:4px;}
+.score-meta{color:#c9b8ff;margin-top:6px;}
+/* result items */
+.r-item{background:rgba(255,255,255,.06);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
+.r-item.ok{border-left:4px solid #80ffb4;}
+.r-item.nok{border-left:4px solid #ff8a80;}
+.r-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:bold;margin-bottom:8px;}
+.r-badge.ok{background:rgba(0,255,128,.15);color:#80ffb4;border:1px solid rgba(0,255,128,.3);}
+.r-badge.nok{background:rgba(255,100,80,.15);color:#ff8a80;border:1px solid rgba(255,100,80,.3);}
+.r-q{font-size:.9rem;color:#c9b8ff;margin-bottom:6px;}
+.r-ans{font-family:'Courier New',monospace;font-size:.85rem;background:rgba(0,0,0,.3);padding:8px 12px;border-radius:6px;margin:6px 0;word-break:break-word;}
+.r-exp{font-size:.82rem;color:#94a3b8;margin-top:8px;border-top:1px solid rgba(255,255,255,.07);padding-top:8px;}
+.r-exp span{color:#fda085;font-weight:bold;}
+/* action buttons */
+.action-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:28px 0;}
+.btn{padding:12px 26px;border-radius:25px;border:none;cursor:pointer;font-size:.95rem;font-weight:bold;transition:all .3s;}
+.btn:hover{transform:translateY(-2px);}
+.btn-pdf{background:linear-gradient(45deg,#f093fb,#f5576c);color:#fff;}
+.btn-sqlite{background:linear-gradient(45deg,#80ffb4,#38bdf8);color:#1a1a3e;}
+.btn-hist{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);}
+/* db info */
+.db-box{background:rgba(1,139,255,.1);border:1px solid rgba(1,139,255,.3);border-radius:10px;padding:14px 18px;margin:16px 0;font-size:.87rem;color:#7dd3fc;}
+.db-box strong{color:#38bdf8;}
+/* history table */
+.hist-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.85rem;}
+.hist-table th{background:rgba(240,147,251,.2);color:#f093fb;padding:10px;text-align:left;}
+.hist-table td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);}
+/* notification */
+#notif{position:fixed;top:20px;right:20px;background:rgba(0,255,128,.15);border:1px solid rgba(0,255,128,.4);color:#80ffb4;padding:13px 18px;border-radius:10px;z-index:999;display:none;max-width:300px;font-size:.9rem;}
+/* print */
+@media print{
+  body{background:#fff!important;color:#000!important;font-size:10pt;}
+  .no-print{display:none!important;}
+  #quiz-section,#results-section{display:none!important;}
+  #print-area{display:block!important;}
+  .print-header{text-align:center;padding-bottom:12px;border-bottom:2px solid #333;margin-bottom:16px;}
+  .print-header h2{font-size:16pt;margin-bottom:4px;}
+  .print-header p{font-size:10pt;color:#555;}
+  .print-score{font-size:22pt;font-weight:bold;text-align:center;margin:12px 0;}
+  .print-item{page-break-inside:avoid;margin-bottom:12px;padding:10px;border-left:3px solid #999;padding-left:12px;}
+  .print-ok{border-left-color:green;}
+  .print-nok{border-left-color:red;}
+  .print-label{font-weight:bold;font-size:9pt;}
+  .print-label.ok{color:green;}
+  .print-label.nok{color:red;}
+  .print-q{font-size:9pt;color:#444;margin:3px 0;}
+  .print-a{font-family:monospace;font-size:9pt;background:#f5f5f5;padding:4px 8px;border-radius:3px;margin:3px 0;}
+  .print-e{font-size:8pt;color:#666;margin-top:4px;}
+}
+</style>
+</head>
+<body>
+
+<div id="notif"></div>
+<div id="print-area" style="display:none"></div>
+
+<!-- Base de apoio drawer -->
+<div id="apoio-overlay" onclick="closeApoio()"></div>
+<button id="apoio-btn" onclick="openApoio()" title="Abrir material de referência">📚 Base de Apoio</button>
+<div id="apoio-drawer">
+  <div id="apoio-head">
+    <span>📚 Base de Apoio — Exercícios de Referência</span>
+    <button id="apoio-close" onclick="closeApoio()" title="Fechar">✕</button>
+  </div>
+  <div id="apoio-note">
+    ⚠️ Este material contém <strong>exemplos semelhantes</strong> — use para entender a sintaxe, mas não copie diretamente. O simulado avalia <em>seu</em> raciocínio!
+  </div>
+  <iframe id="apoio-frame" src="base_apoio_neo4j.html" title="Material de apoio"></iframe>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz-section">
+<div class="container">
+  <div class="header">
+    <h1>🧩 Simulado Neo4j</h1>
+    <p>Banco de Dados Não Relacional — Univassouras 2026</p>
+    <div class="badge-row">
+      <span class="badge badge-q">30 Questões</span>
+      <span class="badge badge-mc">20 Objetivas</span>
+      <span class="badge badge-cy">10 Cypher Discursivas</span>
+    </div>
+  </div>
+
+  <div class="prog-bar"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+  <div class="prog-label"><span id="prog-lbl">0 / 30 respondidas</span></div>
+
+  <div class="student-form">
+    <label for="sname">Nome completo do aluno</label>
+    <input type="text" id="sname" placeholder="Digite seu nome completo...">
+  </div>
+
+  <div id="qcontainer"></div>
+
+  <div class="submit-wrap">
+    <button class="btn-submit no-print" onclick="submitQuiz()">🚀 Finalizar Simulado</button>
+  </div>
+</div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-section">
+<div class="container">
+  <div class="score-wrap">
+    <h2 style="font-size:1.8rem;color:#f093fb;">Resultado do Simulado</h2>
+    <div class="score-ring" id="score-ring">
+      <div class="score-n" id="score-n">—</div>
+      <div class="score-sub" id="score-sub">acertos / 30</div>
+    </div>
+    <div class="score-meta" id="score-meta"></div>
+  </div>
+
+  <div class="db-box" id="db-info">
+    <strong>💾 SQLite:</strong> resultado salvo no banco embutido.
+  </div>
+
+  <div class="action-btns no-print">
+    <button class="btn btn-pdf" onclick="exportPDF()">📄 Exportar PDF / Imprimir</button>
+    <button class="btn btn-sqlite" onclick="downloadSQLite()">⬇️ Baixar .sqlite</button>
+    <button class="btn btn-hist" onclick="toggleHist()">📊 Histórico de Tentativas</button>
+  </div>
+
+  <div id="hist-area" style="display:none;margin-bottom:24px;">
+    <div class="db-box" style="overflow-x:auto;">
+      <strong>Histórico salvo no SQLite:</strong>
+      <table class="hist-table" id="hist-table"></table>
+    </div>
+  </div>
+
+  <div id="review-container"></div>
+
+  <div class="action-btns no-print" style="margin-top:10px;">
+    <button class="btn btn-hist" onclick="location.reload()">🔄 Novo Simulado</button>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.min.js"></script>
+<script>
+// ─── QUESTIONS ────────────────────────────────────────────────────────────────
+const QS = [
+  // 20 Multiple Choice
+  {id:1,type:'mc',
+   q:'O que é um <strong>nó (node)</strong> no Neo4j?',
+   opts:['Uma coluna em uma tabela relacional','Uma entidade representada como um objeto no grafo','Um relacionamento entre duas tabelas','Um índice de busca otimizado'],
+   c:1, exp:'Nós representam entidades — equivalente a uma linha de tabela, mas armazenado como objeto com propriedades e conectado por relacionamentos físicos.'},
+  {id:2,type:'mc',
+   q:'O que são <strong>labels</strong> no Neo4j?',
+   opts:['Chaves primárias obrigatórias dos nós','Categorias ou tipos atribuídos a um nó para classificá-lo','Nomes dos relacionamentos entre os nós','Propriedades booleanas obrigatórias'],
+   c:1, exp:'Labels são "etiquetas" que classificam nós (ex: :Aluno, :Professor). Um nó pode ter múltiplos labels simultaneamente, como :Professor e :Diretora.'},
+  {id:3,type:'mc',
+   q:'Qual a função da cláusula <strong>MATCH</strong> no Cypher?',
+   opts:['Criar novos nós e relacionamentos no grafo','Deletar relacionamentos entre nós','Encontrar padrões de nós e relacionamentos no grafo','Modificar propriedades de nós existentes'],
+   c:2, exp:'MATCH localiza padrões — é o SELECT/FROM/JOIN do Cypher. Define quais nós e relacionamentos você quer encontrar antes de operar sobre eles.'},
+  {id:4,type:'mc',
+   q:'Qual a diferença fundamental entre <strong>CREATE</strong> e <strong>MERGE</strong>?',
+   opts:['CREATE cria apenas nós; MERGE cria apenas relacionamentos','MERGE verifica se o padrão já existe antes de criar; CREATE sempre cria, podendo gerar duplicatas','CREATE é mais rápido; MERGE é mais seguro por isso','Não há diferença funcional entre eles'],
+   c:1, exp:'MERGE é idempotente: "encontra ou cria". CREATE sempre insere — em scripts reexecutados ou migrações, gera duplicatas. Prefira MERGE em ETL e população de bancos.'},
+  {id:5,type:'mc',
+   q:'O que representa: <code>(a:Aluno)-[:MATRICULADO_EM]->(t:Turma)</code>?',
+   opts:['O nó Aluno tem uma propriedade chamada MATRICULADO_EM','Aluno e Turma são relacionamentos','Um nó :Aluno tem um relacionamento MATRICULADO_EM direcionado para um nó :Turma','Aluno e Turma são labels do mesmo nó'],
+   c:2, exp:'Parênteses () = nós, colchetes [] = relacionamentos. A seta (->) indica direção: o relacionamento parte de :Aluno e chega em :Turma.'},
+  {id:6,type:'mc',
+   q:'Qual combinação do Cypher equivale ao <strong>HAVING</strong> do SQL?',
+   opts:['WHERE antes do RETURN','WITH seguido de WHERE após uma agregação','LIMIT combinado com ORDER BY','DISTINCT no RETURN'],
+   c:1, exp:'WITH funciona como checkpoint: agrega (avg, count...) e o WHERE seguinte filtra sobre os valores calculados — idêntico ao HAVING do SQL.'},
+  {id:7,type:'mc',
+   q:'O que faz <strong>DETACH DELETE n</strong>?',
+   opts:['Remove apenas as propriedades do nó','Remove o nó e todos os seus relacionamentos automaticamente','Remove apenas os relacionamentos, preservando o nó','Desativa temporariamente o nó sem removê-lo'],
+   c:1, exp:'DELETE sozinho falha se o nó ainda tiver relacionamentos. DETACH DELETE remove primeiro todos os relacionamentos e depois o nó — obrigatório em grafos conectados.'},
+  {id:8,type:'mc',
+   q:'Por que grafos são mais eficientes que SQL em consultas com <strong>muitos JOINs</strong>?',
+   opts:['Armazenam dados comprimidos usando menos disco','Percorrem relacionamentos com custo O(1) por hop, independente do volume total do banco','Usam índices B-tree mais avançados que PostgreSQL','Paralelizam automaticamente todas as operações'],
+   c:1, exp:'No Neo4j, relacionamentos são ponteiros físicos. Cada hop custa O(1). Em SQL, JOINs crescem com o volume de dados — 6 JOINs em tabelas grandes = produto cartesiano imenso.'},
+  {id:9,type:'mc',
+   q:'O que faz <strong>shortestPath()</strong> no Cypher?',
+   opts:['Ordena nós pela menor distância em propriedades numéricas','Conta o número de nós entre dois pontos do grafo','Encontra o caminho com menor número de hops entre dois nós','Calcula distância geográfica entre nós com coordenadas'],
+   c:2, exp:'shortestPath() implementa BFS (busca em largura) nativamente. Em SQL seria necessária uma CTE recursiva complexa. Exemplo de uso: 6 graus de separação, rotas.'},
+  {id:10,type:'mc',
+   q:'O que faz a cláusula <strong>UNWIND</strong> no Cypher?',
+   opts:['Desfaz a última transação no banco','Desempacota uma lista, criando uma linha de resultado por elemento','Remove todos os relacionamentos de um nó','Fecha e reabre a conexão com o Neo4j'],
+   c:1, exp:'UNWIND é o "explode" do Cypher: UNWIND $lista AS item cria uma linha por elemento. Fundamental para criação em batch — muito mais eficiente do que uma transação por nó.'},
+  {id:11,type:'mc',
+   q:'Por que criar <strong>índices antes</strong> de migrar relacionamentos (FKs) para o Neo4j?',
+   opts:['Índices são obrigatórios para usar MERGE','O MATCH usa índice para localizar nós com O(1) em vez de varrer todos os nós O(N)','Sem índice não é possível criar nós com MERGE','Índices aumentam espaço em disco disponível para relacionamentos'],
+   c:1, exp:'Na migração de FKs, fazemos MATCH (n:Label {id: X}). Sem índice = full scan O(N) por FK. Com índice = O(1). Para 500 livros e 5.000 FKs, a diferença é de segundos vs. horas.'},
+  {id:12,type:'mc',
+   q:'Uma <strong>tabela de junção</strong> (com propriedades) no relacional vira o quê no Neo4j?',
+   opts:['Um novo label de nó com as propriedades da tabela','Um relacionamento tipado com as propriedades como atributos da aresta','Uma constraint de unicidade','Um índice composto nas tabelas participantes'],
+   c:1, exp:'Ex: itens_pedido(pedido_id, livro_id, quantidade, preco) → (:Pedido)-[:CONTEM {quantidade, preco}]->(:Livro). A tabela desaparece; suas props migram para o relacionamento.'},
+  {id:13,type:'mc',
+   q:'O que acontece ao executar <code>SET p:Diretora</code> em um nó que já tem <strong>:Professor</strong>?',
+   opts:['Remove :Professor e adiciona :Diretora','Gera erro pois nó só pode ter um label','Adiciona :Diretora ao nó, que passa a ter ambos simultaneamente','Renomeia :Professor para :Diretora em todo o banco'],
+   c:2, exp:'No Neo4j, SET adiciona labels — não substitui. O nó passa a ter :Professor E :Diretora simultaneamente. Útil para modelar subtipos sem duplicar dados.'},
+  {id:14,type:'mc',
+   q:'O que faz <strong>EXPLAIN</strong> no Neo4j Browser?',
+   opts:['Executa a query e retorna resultado com metadados','Exibe o plano de execução estimado sem executar a query','Exibe as propriedades e labels de um nó específico','Gera documentação em Markdown automaticamente'],
+   c:1, exp:'EXPLAIN mostra como o Neo4j planeja executar sem rodar. Você vê NodeIndexSeek (bom) vs AllNodesScan (ruim). Use antes de rodar queries pesadas em produção.'},
+  {id:15,type:'mc',
+   q:'Qual notação Cypher representa um <strong>relacionamento sem direção definida</strong>?',
+   opts:['(a)-[:REL]-(b) — sem seta','(a)→[:REL]→(b) — usando Unicode','(a)<-[:REL]->(b) — setas nos dois lados','(a):REL:(b) — sem colchetes'],
+   c:0, exp:'(a)-[:REL]-(b) sem seta navega o relacionamento em qualquer direção. Útil quando criação e consulta têm direções diferentes, como amizades bidirecionais.'},
+  {id:16,type:'mc',
+   q:'Diferença entre <strong>count(DISTINCT x)</strong> e <strong>count(x)</strong>?',
+   opts:['Não há diferença prática — retornam o mesmo valor','count(DISTINCT x) conta apenas valores únicos, eliminando repetições','count(x) é sempre mais rápido','DISTINCT só funciona com tipo String'],
+   c:1, exp:'count(x) conta todas as ocorrências. count(DISTINCT x) elimina duplicatas antes de contar — fundamental em traversals que podem passar pelo mesmo nó múltiplas vezes.'},
+  {id:17,type:'mc',
+   q:'Qual cláusula Cypher equivale ao <strong>LEFT JOIN</strong> do SQL?',
+   opts:['MATCH com WHERE IS NULL','OPTIONAL MATCH','MERGE com ON MATCH SET','WITH ... WHERE x IS NOT NULL'],
+   c:1, exp:'OPTIONAL MATCH = LEFT JOIN: retorna o padrão principal mesmo quando o padrão opcional não existe — preenchendo com null. Útil para "alunos com ou sem nota cadastrada".'},
+  {id:18,type:'mc',
+   q:'Quando <strong>MERGE</strong> pode causar duplicação indesejada?',
+   opts:['Quando o padrão não inclui propriedade identificadora (chave) — o Neo4j cria novo nó para cada variação','Quando há índices criados para as propriedades','Quando o banco tem mais de 1.000 nós do mesmo label','Quando a query está numa transação explícita'],
+   c:0, exp:'MERGE (n:Aluno) sem propriedade cria múltiplos nós se chamado várias vezes. Use MERGE (n:Aluno {matricula: $m}) para que a chave identifique unicamente o nó.'},
+  {id:19,type:'mc',
+   q:'O que são <strong>supernós</strong> e por que são problemáticos?',
+   opts:['Nós com muitas propriedades — tornam queries lentas pelo excesso de dados','Nós com muitos relacionamentos — consultas percorrem todos mesmo os irrelevantes','Nós duplicados — causam inconsistência no grafo','Nós sem labels — difíceis de indexar e localizar'],
+   c:1, exp:'Um nó com 100.000 relacionamentos é supernode. Qualquer query que passe por ele avalia todos os 100.000 relacionamentos. Solução: labels mais específicos ou filtros por propriedade.'},
+  {id:20,type:'mc',
+   q:'Sintaxe correta para criar índice na propriedade <code>email</code> do label <strong>:Cliente</strong>?',
+   opts:['INDEX ON :Cliente(email)','CREATE INDEX cliente_email IF NOT EXISTS FOR (c:Cliente) ON (c.email)','ADD INDEX email TO :Cliente','CREATE CONSTRAINT ON (c:Cliente) ASSERT c.email IS UNIQUE'],
+   c:1, exp:'Sintaxe Neo4j 4.x+: CREATE INDEX nome IF NOT EXISTS FOR (n:Label) ON (n.prop). O IF NOT EXISTS torna idempotente. A opção D cria constraint de unicidade — mais restritiva.'},
+
+  // 10 Cypher Discursive
+  {id:21,type:'cy',
+   q:'Escreva uma query Cypher para encontrar todos os nós <strong>:Pessoa</strong> onde a propriedade <code>idade</code> é <strong>maior que 30</strong>, retornando nome e idade ordenados por idade crescente.',
+   req:['match','(','where','idade','>','return'],
+   tip:'Pense nas cláusulas: qual localiza nós por label? Qual filtra por condição? Como você ordena crescente?',
+   exp:'MATCH (p:Pessoa) WHERE p.idade &gt; 30 RETURN p.nome AS nome, p.idade AS idade ORDER BY p.idade'},
+  {id:22,type:'cy',
+   q:'Escreva uma query para <strong>criar</strong> um nó <strong>:Produto</strong> com: <code>nome: "Notebook"</code>, <code>preco: 2500</code>, <code>categoria: "Tecnologia"</code>.',
+   req:['create',':produto','nome','2500'],
+   tip:'Qual cláusula sempre insere, mesmo que já exista? As propriedades ficam dentro de { } logo após o label.',
+   exp:'CREATE (p:Produto {nome: "Notebook", preco: 2500, categoria: "Tecnologia"}) RETURN p'},
+  {id:23,type:'cy',
+   q:'Escreva uma query para encontrar todos os <strong>:Clientes</strong> que realizaram ao menos um <strong>:Pedido</strong>. Retorne nome do cliente e <strong>total de pedidos</strong>, ordenado decrescentemente.',
+   req:['match',':cliente',':pedido','count','return'],
+   tip:'Como você representa um relacionamento entre dois nós no MATCH? Qual função conta ocorrências de um padrão?',
+   exp:'MATCH (c:Cliente)&lt;-[:FEITO_POR]-(p:Pedido) RETURN c.nome AS cliente, count(p) AS total ORDER BY total DESC'},
+  {id:24,type:'cy',
+   q:'Escreva uma query usando <strong>MERGE</strong> para garantir que existe um nó <strong>:Cidade</strong> com <code>nome: "Rio de Janeiro"</code>, criando-o apenas se ainda não existir.',
+   req:['merge',':cidade','nome','rio'],
+   tip:'MERGE é idempotente: "encontra ou cria". Lembre de incluir a propriedade que identifica unicamente o nó dentro de { }.',
+   exp:'MERGE (c:Cidade {nome: "Rio de Janeiro"}) RETURN c'},
+  {id:25,type:'cy',
+   q:'Escreva uma query para contar quantos <strong>:Livros</strong> há em cada <strong>:Categoria</strong>. Retorne o nome da categoria e o total, ordenado do maior para o menor.',
+   req:['match',':livro',':categoria','count','return','order','desc'],
+   tip:'count() no RETURN já agrupa pelo que está fora da função. Como você expressa "do maior para o menor" no ORDER BY?',
+   exp:'MATCH (l:Livro)-[:PERTENCE_A]-&gt;(c:Categoria) RETURN c.nome AS categoria, count(l) AS total ORDER BY total DESC'},
+  {id:26,type:'cy',
+   q:'Escreva uma query para <strong>deletar completamente</strong> o nó <strong>:Usuario</strong> com <code>id = 5</code>, removendo também todos os seus relacionamentos.',
+   req:['match',':usuario','id','5','detach','delete'],
+   tip:'DELETE sozinho falha se o nó ainda tiver relacionamentos. Existe uma variante do DELETE que remove o nó e todas as arestas juntas.',
+   exp:'MATCH (u:Usuario {id: 5}) DETACH DELETE u'},
+  {id:27,type:'cy',
+   q:'Escreva uma query para encontrar o <strong>caminho mais curto</strong> entre <strong>:Pessoa</strong> com <code>nome: "Ana"</code> e <strong>:Pessoa</strong> com <code>nome: "Bruno"</code>, pelo relacionamento <strong>:CONHECE</strong>.',
+   req:['match','shortestpath',':pessoa','ana','bruno',':conhece'],
+   tip:'Localize os dois nós separadamente. Existe uma função nativa do Neo4j para menor caminho — use com o padrão [:REL*] para permitir múltiplos hops.',
+   exp:'MATCH (a:Pessoa {nome:"Ana"}),(b:Pessoa {nome:"Bruno"}) MATCH path=shortestPath((a)-[:CONHECE*]-(b)) RETURN path, length(path) AS graus'},
+  {id:28,type:'cy',
+   q:'Escreva uma query usando <strong>WITH</strong> para calcular a <strong>média das notas</strong> no relacionamento <strong>:AVALIOU</strong>, retornando apenas produtos com média <strong>acima de 4.0</strong>.',
+   req:['match',':avaliou','with','avg','where','4','return'],
+   tip:'WITH funciona como um checkpoint: agregue com avg() no WITH, depois aplique o WHERE sobre o valor calculado.',
+   exp:'MATCH (c:Cliente)-[av:AVALIOU]-&gt;(l:Livro) WITH l.titulo AS livro, avg(av.nota) AS media WHERE media &gt; 4.0 RETURN livro, round(media,2) AS media ORDER BY media DESC'},
+  {id:29,type:'cy',
+   q:'Escreva uma query usando <strong>UNWIND</strong> para criar três nós <strong>:Tag</strong> com os nomes <code>"Python"</code>, <code>"NoSQL"</code> e <code>"Grafos"</code> a partir de uma lista.',
+   req:['unwind',':tag','nome','python','nosql','grafos'],
+   tip:'UNWIND transforma uma lista ["a","b","c"] em linhas separadas. Depois de desempacotar, como você cria cada nó garantindo que não duplica?',
+   exp:'UNWIND ["Python","NoSQL","Grafos"] AS nome MERGE (t:Tag {nome: nome}) RETURN t'},
+  {id:30,type:'cy',
+   q:'Escreva uma query para encontrar todos os <strong>:Clientes</strong> que compraram livros do mesmo <strong>:Autor</strong> que o cliente com <code>id: 1</code>, sem incluir o próprio cliente. Use <strong>DISTINCT</strong>.',
+   req:['match',':cliente',':autor','where','return','distinct'],
+   tip:'Parta do cliente 1 e navegue: quais relacionamentos ligam um cliente a um autor passando pelos pedidos e livros? Depois percorra o caminho inverso até outros clientes.',
+   exp:'MATCH (c1:Cliente {id:1})&lt;-[:FEITO_POR]-(p1)-[:CONTEM]-&gt;(l1)-[:ESCRITO_POR]-&gt;(a)&lt;-[:ESCRITO_POR]-(l2)&lt;-[:CONTEM]-(p2)-[:FEITO_POR]-&gt;(c2:Cliente) WHERE c2&lt;&gt;c1 RETURN DISTINCT c2.nome'}
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let answered = 0;
+let SQL = null, db = null;
+
+// ─── RENDER QUESTIONS ─────────────────────────────────────────────────────────
+function renderQuestions() {
+  const wrap = document.getElementById('qcontainer');
+  QS.forEach((q,i) => {
+    const div = document.createElement('div');
+    div.className = 'q-card' + (q.type==='cy' ? ' cy' : '');
+    div.id = 'qcard_'+q.id;
+    const typeLabel = q.type==='mc' ? '📝 Objetiva' : '⌨️ Cypher Discursiva';
+    let inner = `<div class="q-num">${typeLabel} · Questão ${q.id} de 30</div>
+      <div class="q-text">${q.q}</div>`;
+    if (q.type==='mc') {
+      inner += '<div class="opts">';
+      q.opts.forEach((opt,j) => {
+        inner += `<div class="opt" onclick="pickOpt(${q.id},${j})">
+          <input type="radio" name="q${q.id}" id="o${q.id}_${j}" value="${j}">
+          <label for="o${q.id}_${j}">${opt}</label>
+        </div>`;
+      });
+      inner += '</div>';
+    } else {
+      inner += `<textarea class="cy-area" id="cy_${q.id}" rows="3"
+        placeholder="// Digite sua query Cypher aqui..."
+        oninput="updateProg()"></textarea>
+        <div class="cy-hint">💡 ${q.tip}</div>`;
+    }
+    div.innerHTML = inner;
+    wrap.appendChild(div);
+  });
+}
+
+function pickOpt(qid, idx) {
+  document.querySelectorAll(`#qcard_${qid} .opt`).forEach(o => o.classList.remove('selected'));
+  document.querySelector(`#qcard_${qid} .opt:nth-child(${idx+1})`).classList.add('selected');
+  document.getElementById(`o${qid}_${idx}`).checked = true;
+  updateProg();
+}
+
+function updateProg() {
+  let cnt = 0;
+  QS.forEach(q => {
+    if (q.type==='mc') {
+      if (document.querySelector(`input[name="q${q.id}"]:checked`)) cnt++;
+    } else {
+      const v = (document.getElementById('cy_'+q.id)||{}).value||'';
+      if (v.trim().length > 3) cnt++;
+    }
+  });
+  const pct = Math.round(cnt/30*100);
+  document.getElementById('prog').style.width = pct+'%';
+  document.getElementById('prog-lbl').textContent = cnt+' / 30 respondidas';
+}
+
+// ─── GRADING ──────────────────────────────────────────────────────────────────
+function checkCy(q, ans) {
+  if (!ans || ans.trim().length < 4) return false;
+  const n = ans.toLowerCase().replace(/\s+/g,' ').trim();
+  return q.req.every(t => n.includes(t.toLowerCase()));
+}
+
+function gradeQuiz() {
+  const results = [];
+  let score = 0;
+  QS.forEach(q => {
+    let ans='', ok=false;
+    if (q.type==='mc') {
+      const el = document.querySelector(`input[name="q${q.id}"]:checked`);
+      ans = el ? q.opts[parseInt(el.value)] : '(não respondeu)';
+      ok = el ? parseInt(el.value) === q.c : false;
+    } else {
+      ans = (document.getElementById('cy_'+q.id)||{}).value||'(não respondeu)';
+      ok = checkCy(q, ans);
+    }
+    if (ok) score++;
+    results.push({q, ans, ok});
+  });
+  return {score, results};
+}
+
+// ─── SUBMIT ───────────────────────────────────────────────────────────────────
+async function submitQuiz() {
+  const name = document.getElementById('sname').value.trim();
+  if (!name) { alert('Por favor, informe seu nome antes de finalizar.'); return; }
+
+  const {score, results} = gradeQuiz();
+  const pct = Math.round(score/30*100);
+
+  // hide quiz, show results
+  document.getElementById('quiz-section').style.display = 'none';
+  document.getElementById('results-section').style.display = 'block';
+
+  // score ring
+  const ring = document.getElementById('score-ring');
+  ring.style.borderColor = pct>=70?'#80ffb4':pct>=50?'#fda085':'#ff8a80';
+  document.getElementById('score-n').style.color = pct>=70?'#80ffb4':pct>=50?'#fda085':'#ff8a80';
+  document.getElementById('score-n').textContent = score;
+  document.getElementById('score-sub').textContent = `acertos de 30  (${pct}%)`;
+  const msg = pct>=80?'Excelente! Domínio sólido de Neo4j.':pct>=60?'Bom desempenho! Revise os pontos marcados.':'Continue estudando — revise as aulas 06 e 07.';
+  document.getElementById('score-meta').innerHTML = `<p style="margin-top:8px">${msg}</p><p style="font-size:.85rem;margin-top:4px;color:#c9b8ff">Aluno: <strong style="color:#f093fb">${name}</strong></p>`;
+
+  // render review
+  const rev = document.getElementById('review-container');
+  rev.innerHTML = '<h3 style="color:#f093fb;margin-bottom:16px;">Revisão das Respostas</h3>';
+  results.forEach(({q,ans,ok}) => {
+    const card = document.createElement('div');
+    card.className = 'r-item '+(ok?'ok':'nok');
+    const corr = q.type==='mc' ? q.opts[q.c] : `<code style="color:#ffd700">${q.exp}</code>`;
+    card.innerHTML = `<span class="r-badge ${ok?'ok':'nok'}">${ok?'✅ Correto':'❌ Incorreto'}</span>
+      <div class="r-q">Q${q.id}: ${q.q.replace(/<[^>]+>/g,'')}</div>
+      <div class="r-ans">Sua resposta: ${ans}</div>
+      ${!ok?`<div class="r-ans" style="border:1px solid rgba(128,255,180,.2);">Gabarito: ${corr}</div>`:''}
+      <div class="r-exp"><span>Por quê:</span> ${q.exp}</div>`;
+    rev.appendChild(card);
+  });
+
+  // SQLite
+  await saveToSQLite(name, score, pct, results);
+  buildPrintArea(name, score, pct, results);
+}
+
+// ─── SQLITE ───────────────────────────────────────────────────────────────────
+async function initSQL() {
+  if (SQL) return;
+  SQL = await initSqlJs({locateFile: f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}`});
+  const saved = localStorage.getItem('neo4j_sim_db');
+  if (saved) {
+    try { db = new SQL.Database(new Uint8Array(JSON.parse(saved))); return; } catch(e){}
+  }
+  db = new SQL.Database();
+  db.run(`CREATE TABLE IF NOT EXISTS simulado(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    aluno TEXT, data_hora TEXT,
+    acertos INTEGER, total INTEGER, pct REAL);`);
+  db.run(`CREATE TABLE IF NOT EXISTS respostas(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sim_id INTEGER, questao INTEGER,
+    tipo TEXT, resposta TEXT, correto INTEGER);`);
+}
+
+function persistDB() {
+  const data = db.export();
+  localStorage.setItem('neo4j_sim_db', JSON.stringify(Array.from(data)));
+}
+
+async function saveToSQLite(name, score, pct, results) {
+  try {
+    await initSQL();
+    const now = new Date().toLocaleString('pt-BR');
+    db.run('INSERT INTO simulado(aluno,data_hora,acertos,total,pct) VALUES(?,?,?,?,?)',
+           [name, now, score, 30, pct]);
+    const simId = db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0];
+    results.forEach(({q,ans,ok}) => {
+      db.run('INSERT INTO respostas(sim_id,questao,tipo,resposta,correto) VALUES(?,?,?,?,?)',
+             [simId, q.id, q.type, ans.substring(0,500), ok?1:0]);
+    });
+    persistDB();
+    document.getElementById('db-info').innerHTML =
+      `<strong>💾 SQLite:</strong> Resultado do aluno <strong>${name}</strong> salvo com sucesso — ${now}. Total de tentativas registradas: ${countAttempts()}.`;
+    notify('✅ Resultado salvo no banco SQLite!');
+  } catch(e) {
+    document.getElementById('db-info').innerHTML = `<strong>⚠️ SQLite:</strong> ${e.message} — resultado só disponível para impressão.`;
+  }
+}
+
+function countAttempts() {
+  try { return db.exec('SELECT COUNT(*) FROM simulado')[0].values[0][0]; } catch(e){ return '?'; }
+}
+
+function toggleHist() {
+  const area = document.getElementById('hist-area');
+  if (area.style.display==='none') {
+    area.style.display = 'block';
+    try {
+      const rows = db.exec('SELECT aluno, data_hora, acertos, total, pct FROM simulado ORDER BY id DESC')[0];
+      let html = '<tr><th>Aluno</th><th>Data/Hora</th><th>Acertos</th><th>%</th></tr>';
+      rows.values.forEach(r => {
+        html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}/${r[3]}</td><td>${r[4]}%</td></tr>`;
+      });
+      document.getElementById('hist-table').innerHTML = html;
+    } catch(e) { document.getElementById('hist-table').innerHTML='<tr><td>Sem dados</td></tr>'; }
+  } else { area.style.display='none'; }
+}
+
+function downloadSQLite() {
+  if (!db) { alert('Banco ainda não inicializado.'); return; }
+  const data = db.export();
+  const blob = new Blob([data], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'simulado_neo4j.sqlite';
+  a.click();
+  notify('⬇️ Arquivo simulado_neo4j.sqlite baixado!');
+}
+
+// ─── PDF / PRINT ──────────────────────────────────────────────────────────────
+function buildPrintArea(name, score, pct, results) {
+  const now = new Date().toLocaleString('pt-BR');
+  let html = `<div class="print-header">
+    <h2>Simulado Neo4j — Banco de Dados Não Relacional</h2>
+    <p>Univassouras 2026 · Prof. Mesc. Diego Ramos Inácio</p>
+    <p><strong>Aluno:</strong> ${name} &nbsp;|&nbsp; <strong>Data:</strong> ${now}</p>
+  </div>
+  <div class="print-score" style="color:${pct>=70?'green':pct>=50?'darkorange':'red'}">
+    ${score} / 30 acertos &nbsp;(${pct}%)
+  </div>
+  <hr style="margin:10px 0;">`;
+  results.forEach(({q,ans,ok}) => {
+    html += `<div class="print-item ${ok?'print-ok':'print-nok'}">
+      <div class="print-label ${ok?'ok':'nok'}">Q${q.id} [${q.type==='mc'?'Objetiva':'Cypher'}] — ${ok?'CORRETO':'INCORRETO'}</div>
+      <div class="print-q">${q.q.replace(/<[^>]+>/g,'')}</div>
+      <div class="print-a">Resposta: ${ans.replace(/<[^>]+>/g,'')}</div>
+      ${!ok?`<div class="print-a">Gabarito: ${q.type==='mc'?q.opts[q.c]:q.exp.replace(/<[^>]+>/g,'')}</div>`:''}
+      <div class="print-e">Explicação: ${q.exp.replace(/<[^>]+>/g,'')}</div>
+    </div>`;
+  });
+  document.getElementById('print-area').innerHTML = html;
+}
+
+function exportPDF() {
+  document.getElementById('print-area').style.display = 'block';
+  window.print();
+  setTimeout(() => { document.getElementById('print-area').style.display = 'none'; }, 1000);
+}
+
+// ─── NOTIFY ───────────────────────────────────────────────────────────────────
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// ─── BASE DE APOIO ────────────────────────────────────────────────────────────
+function openApoio() {
+  document.getElementById('apoio-drawer').classList.add('open');
+  document.getElementById('apoio-overlay').classList.add('show');
+}
+function closeApoio() {
+  document.getElementById('apoio-drawer').classList.remove('open');
+  document.getElementById('apoio-overlay').classList.remove('show');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderQuestions();
+initSQL().catch(()=>{});
+</script>
+</body>
+</html>

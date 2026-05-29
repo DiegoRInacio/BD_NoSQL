@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base de Apoio — Neo4j / Cypher</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0f0c29,#1a1040);min-height:100vh;color:#e2e8f0;padding:24px;}
+.wrap{max-width:900px;margin:0 auto;}
+h1{font-size:2rem;background:linear-gradient(45deg,#f093fb,#f5576c,#fda085);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:6px;}
+.sub{text-align:center;color:#c9b8ff;font-size:.9rem;margin-bottom:24px;}
+/* nav */
+.toc{background:rgba(255,255,255,.06);border-radius:12px;padding:18px 22px;margin-bottom:28px;border:1px solid rgba(240,147,251,.2);}
+.toc h3{color:#fda085;font-size:.95rem;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;}
+.toc a{display:block;color:#c9b8ff;text-decoration:none;font-size:.83rem;padding:5px 10px;border-radius:6px;border:1px solid rgba(201,184,255,.15);transition:all .2s;}
+.toc a:hover{background:rgba(240,147,251,.1);color:#f093fb;border-color:rgba(240,147,251,.4);}
+/* warning */
+.warn{background:rgba(255,200,50,.12);border:1px solid rgba(255,200,50,.4);border-radius:10px;padding:14px 18px;margin-bottom:28px;color:#ffe58f;font-size:.88rem;line-height:1.6;}
+.warn strong{color:#ffd700;}
+/* schema block */
+.schema{background:rgba(0,0,0,.35);border-radius:12px;padding:20px;margin-bottom:28px;border:1px solid rgba(240,147,251,.2);}
+.schema h3{color:#f093fb;font-size:1rem;margin-bottom:14px;}
+.node-chip{display:inline-block;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;padding:5px 14px;border-radius:20px;font-size:.82rem;font-weight:bold;margin:4px;}
+.rel-chip{display:inline-block;background:rgba(253,160,133,.15);color:#fda085;padding:4px 12px;border-radius:20px;font-size:.8rem;border:1px solid #fda085;margin:4px;}
+/* section */
+.section{margin-bottom:32px;}
+.section-title{font-size:1.15rem;color:#f093fb;font-weight:bold;margin-bottom:4px;padding-left:12px;border-left:4px solid #f093fb;}
+.section-sub{font-size:.8rem;color:#c9b8ff;margin-bottom:14px;padding-left:16px;}
+/* example card */
+.ex{background:rgba(255,255,255,.05);border-radius:10px;padding:18px 20px;margin-bottom:14px;border:1px solid rgba(255,255,255,.07);}
+.ex-q{font-size:.9rem;color:#e0d0ff;margin-bottom:12px;line-height:1.6;}
+.ex-q strong{color:#fda085;}
+.ex-q code{background:rgba(0,0,0,.3);padding:1px 6px;border-radius:4px;font-family:'Courier New',monospace;color:#ffd700;font-size:.85rem;}
+pre{margin:0!important;font-size:.82rem!important;line-height:1.55!important;}
+.why{font-size:.78rem;color:#94a3b8;margin-top:10px;padding:8px 12px;background:rgba(0,0,0,.2);border-radius:6px;border-left:3px solid rgba(240,147,251,.3);}
+.why strong{color:#f093fb;}
+/* badge */
+.bdg{display:inline-block;padding:2px 9px;border-radius:10px;font-size:.72rem;font-weight:bold;margin-bottom:8px;}
+.bdg-f{background:rgba(0,255,128,.15);color:#80ffb4;border:1px solid rgba(0,255,128,.3);}
+.bdg-m{background:rgba(253,160,133,.15);color:#fda085;border:1px solid rgba(253,160,133,.3);}
+.bdg-d{background:rgba(240,147,251,.15);color:#f093fb;border:1px solid rgba(240,147,251,.3);}
+footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);color:#c9b8ff;font-size:.82rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>📖 Base de Apoio — Neo4j / Cypher</h1>
+<p class="sub">P2 · Banco de Dados Não Relacional · Univassouras 2026</p>
+
+<div class="warn">
+  <strong>⚠️ Como usar este material:</strong> Aqui você encontra <strong>exemplos semelhantes</strong> aos tipos de questão do simulado, usando um domínio diferente (Cinema). Use para revisar a <strong>sintaxe e os padrões</strong> do Cypher — não copie diretamente, pois os nós, relacionamentos e contexto do simulado são outros!
+</div>
+
+<!-- SCHEMA -->
+<div class="schema">
+  <h3>🗂️ Schema usado nestes exemplos — Domínio: Cinema</h3>
+  <p style="color:#c9b8ff;font-size:.82rem;margin-bottom:12px;">Este domínio é diferente do simulado. Os <em>padrões Cypher</em> são os mesmos — só o contexto muda.</p>
+  <div style="margin-bottom:10px;">
+    <strong style="color:#c9b8ff;font-size:.82rem;">Nós:</strong><br>
+    <span class="node-chip">:Ator</span>
+    <span class="node-chip">:Filme</span>
+    <span class="node-chip">:Diretor</span>
+    <span class="node-chip">:Genero</span>
+    <span class="node-chip">:Espectador</span>
+  </div>
+  <div>
+    <strong style="color:#c9b8ff;font-size:.82rem;">Relacionamentos:</strong><br>
+    <span class="rel-chip">(:Ator)-[:ATUA_EM {papel}]->(:Filme)</span>
+    <span class="rel-chip">(:Diretor)-[:DIRIGIU]->(:Filme)</span>
+    <span class="rel-chip">(:Filme)-[:PERTENCE_A]->(:Genero)</span>
+    <span class="rel-chip">(:Espectador)-[:ASSISTIU {nota}]->(:Filme)</span>
+    <span class="rel-chip">(:Espectador)-[:AMIGO_DE {desde}]->(:Espectador)</span>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>🔗 Navegação rápida</h3>
+  <div class="toc-grid">
+    <a href="#s1">1. MATCH + WHERE básico</a>
+    <a href="#s2">2. CREATE com propriedades</a>
+    <a href="#s3">3. MATCH com relacionamento</a>
+    <a href="#s4">4. MERGE — encontra ou cria</a>
+    <a href="#s5">5. count + ORDER BY</a>
+    <a href="#s6">6. DETACH DELETE</a>
+    <a href="#s7">7. shortestPath</a>
+    <a href="#s8">8. WITH + avg + WHERE</a>
+    <a href="#s9">9. UNWIND — criar em lote</a>
+    <a href="#s10">10. Traversal multi-hop</a>
+  </div>
+</div>
+
+<!-- S1 -->
+<div id="s1" class="section">
+  <div class="section-title">1. MATCH + WHERE — filtrar nós por propriedade</div>
+  <div class="section-sub">Padrão: localizar nós de um label e filtrar com condição</div>
+
+  <div class="ex">
+    <span class="bdg bdg-f">Fácil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Todos os <code>:Filmes</code> lançados depois de <code>2010</code>, retornando título e ano ordenados por ano.</div>
+    <pre><code class="language-cypher">MATCH (f:Filme)
+WHERE f.ano > 2010
+RETURN f.titulo AS titulo, f.ano AS ano
+ORDER BY f.ano</code></pre>
+    <div class="why"><strong>Por quê:</strong> MATCH localiza pelo label. WHERE aplica o filtro. ORDER BY ordena — sem DESC = crescente (padrão).</div>
+  </div>
+
+  <div class="ex">
+    <span class="bdg bdg-f">Fácil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Todos os <code>:Atores</code> do país <code>"Brasil"</code>, retornando nome e país.</div>
+    <pre><code class="language-cypher">MATCH (a:Ator)
+WHERE a.pais = "Brasil"
+RETURN a.nome AS nome, a.pais AS pais
+ORDER BY a.nome</code></pre>
+  </div>
+</div>
+
+<!-- S2 -->
+<div id="s2" class="section">
+  <div class="section-title">2. CREATE — criar nó com propriedades</div>
+  <div class="section-sub">Padrão: sempre insere, mesmo se já existir — use quando tem certeza que é novo</div>
+
+  <div class="ex">
+    <span class="bdg bdg-f">Fácil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Criar um nó <code>:Filme</code> com <code>titulo: "O Poderoso Chefão"</code>, <code>ano: 1972</code>, <code>nota: 9.2</code>.</div>
+    <pre><code class="language-cypher">CREATE (f:Filme {
+  titulo: "O Poderoso Chefão",
+  ano: 1972,
+  nota: 9.2
+})
+RETURN f</code></pre>
+    <div class="why"><strong>Por quê:</strong> Propriedades ficam dentro de <code>{ }</code> após o label. CREATE sempre cria — pode gerar duplicatas se chamado duas vezes.</div>
+  </div>
+</div>
+
+<!-- S3 -->
+<div id="s3" class="section">
+  <div class="section-title">3. MATCH com relacionamento — navegar o grafo</div>
+  <div class="section-sub">Padrão: encontrar nós conectados por um tipo de relacionamento</div>
+
+  <div class="ex">
+    <span class="bdg bdg-f">Fácil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Todos os <code>:Atores</code> que participaram do filme <code>"Matrix"</code>.</div>
+    <pre><code class="language-cypher">MATCH (a:Ator)-[:ATUA_EM]->(f:Filme {titulo: "Matrix"})
+RETURN a.nome AS ator, f.titulo AS filme</code></pre>
+  </div>
+
+  <div class="ex">
+    <span class="bdg bdg-m">Médio</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Todos os <code>:Espectadores</code> que assistiram algum filme, retornando nome e <strong>total de filmes assistidos</strong>, ordenado decrescentemente.</div>
+    <pre><code class="language-cypher">MATCH (e:Espectador)-[:ASSISTIU]->(f:Filme)
+RETURN e.nome AS espectador,
+       count(f) AS total_assistidos
+ORDER BY total_assistidos DESC</code></pre>
+    <div class="why"><strong>Por quê:</strong> <code>count()</code> no RETURN agrupa automaticamente pelo que está fora da função. ORDER BY DESC = do maior para o menor.</div>
+  </div>
+</div>
+
+<!-- S4 -->
+<div id="s4" class="section">
+  <div class="section-title">4. MERGE — encontra ou cria (idempotente)</div>
+  <div class="section-sub">Padrão: garante que o nó existe; cria só se não existir; sempre inclua a propriedade-chave</div>
+
+  <div class="ex">
+    <span class="bdg bdg-f">Fácil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Garantir que existe um nó <code>:Genero</code> com <code>nome: "Ficção Científica"</code>.</div>
+    <pre><code class="language-cypher">MERGE (g:Genero {nome: "Ficção Científica"})
+RETURN g</code></pre>
+    <div class="why"><strong>Por quê:</strong> MERGE é idempotente — se rodar 10 vezes, continua existindo só 1 nó. A propriedade dentro do <code>{ }</code> é a chave de busca.</div>
+  </div>
+
+  <div class="ex">
+    <span class="bdg bdg-m">Médio</span>
+    <div class="ex-q"><strong>Exemplo:</strong> MERGE com ON CREATE e ON MATCH para tratar os dois casos separadamente.</div>
+    <pre><code class="language-cypher">MERGE (a:Ator {nome: "Fernanda Montenegro"})
+ON CREATE SET a.pais = "Brasil", a.criado_em = timestamp()
+ON MATCH  SET a.ultimo_acesso = timestamp()
+RETURN a</code></pre>
+    <div class="why"><strong>Por quê:</strong> ON CREATE só roda quando o nó é criado; ON MATCH quando já existe. Útil para registrar timestamps sem sobrescrever dados.</div>
+  </div>
+</div>
+
+<!-- S5 -->
+<div id="s5" class="section">
+  <div class="section-title">5. count + ORDER BY DESC — contar e rankear</div>
+  <div class="section-sub">Padrão: contar quantos nós de um tipo estão conectados a cada nó de outro tipo</div>
+
+  <div class="ex">
+    <span class="bdg bdg-m">Médio</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Quantos <code>:Filmes</code> há em cada <code>:Genero</code>, do mais popular para o menos.</div>
+    <pre><code class="language-cypher">MATCH (f:Filme)-[:PERTENCE_A]->(g:Genero)
+RETURN g.nome AS genero,
+       count(f) AS total_filmes
+ORDER BY total_filmes DESC</code></pre>
+  </div>
+
+  <div class="ex">
+    <span class="bdg bdg-m">Médio</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Ranking de atores pelo número de filmes em que atuaram (top 5).</div>
+    <pre><code class="language-cypher">MATCH (a:Ator)-[:ATUA_EM]->(f:Filme)
+RETURN a.nome AS ator,
+       count(f) AS total_filmes
+ORDER BY total_filmes DESC
+LIMIT 5</code></pre>
+  </div>
+</div>
+
+<!-- S6 -->
+<div id="s6" class="section">
+  <div class="section-title">6. DETACH DELETE — remover nó e relacionamentos</div>
+  <div class="section-sub">Padrão: DELETE sozinho falha se o nó tem relacionamentos; DETACH DELETE remove tudo</div>
+
+  <div class="ex">
+    <span class="bdg bdg-f">Fácil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Deletar completamente o <code>:Diretor</code> com <code>id = 10</code> e todos os seus relacionamentos.</div>
+    <pre><code class="language-cypher">MATCH (d:Diretor {id: 10})
+DETACH DELETE d</code></pre>
+    <div class="why"><strong>Por quê:</strong> Primeiro MATCH para encontrar o nó; depois DETACH DELETE remove as arestas e o nó. Sem DETACH, o Neo4j lança erro se o nó ainda tiver relacionamentos.</div>
+  </div>
+</div>
+
+<!-- S7 -->
+<div id="s7" class="section">
+  <div class="section-title">7. shortestPath — caminho mais curto entre dois nós</div>
+  <div class="section-sub">Padrão: localize os dois nós separadamente, depois aplique shortestPath com [:REL*]</div>
+
+  <div class="ex">
+    <span class="bdg bdg-m">Médio</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Caminho mais curto entre o espectador <code>"Carlos"</code> e <code>"Fernanda"</code> pela rede de amizades.</div>
+    <pre><code class="language-cypher">MATCH (a:Espectador {nome: "Carlos"}),
+      (b:Espectador {nome: "Fernanda"})
+MATCH path = shortestPath((a)-[:AMIGO_DE*]-(b))
+RETURN path,
+       length(path) AS graus_de_separacao</code></pre>
+    <div class="why"><strong>Por quê:</strong> <code>[:AMIGO_DE*]</code> significa "qualquer número de hops". Sem direção (<code>-</code> e não <code>-></code>) navega em ambos os sentidos.</div>
+  </div>
+</div>
+
+<!-- S8 -->
+<div id="s8" class="section">
+  <div class="section-title">8. WITH + avg + WHERE — agregar e filtrar (equivalente ao HAVING)</div>
+  <div class="section-sub">Padrão: MATCH → WITH (calcula) → WHERE (filtra sobre o resultado) → RETURN</div>
+
+  <div class="ex">
+    <span class="bdg bdg-m">Médio</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Filmes com <strong>nota média dos espectadores acima de 8.0</strong>, com pelo menos 2 avaliações.</div>
+    <pre><code class="language-cypher">MATCH (e:Espectador)-[av:ASSISTIU]->(f:Filme)
+WITH f.titulo AS filme,
+     round(avg(av.nota), 2) AS media,
+     count(av)              AS total_avaliacoes
+WHERE total_avaliacoes >= 2
+  AND media > 8.0
+RETURN filme, media, total_avaliacoes
+ORDER BY media DESC</code></pre>
+    <div class="why"><strong>Por quê:</strong> Não é possível usar WHERE sobre <code>avg()</code> diretamente no RETURN. O WITH cria um "checkpoint" — agrega primeiro, filtra depois. Equivale ao HAVING do SQL.</div>
+  </div>
+
+  <div class="ex">
+    <span class="bdg bdg-f">Fácil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Diretores cuja filmografia tem duração média acima de 120 minutos.</div>
+    <pre><code class="language-cypher">MATCH (d:Diretor)-[:DIRIGIU]->(f:Filme)
+WITH d.nome AS diretor, avg(f.duracao) AS media_duracao
+WHERE media_duracao > 120
+RETURN diretor, round(media_duracao, 1) AS media_min
+ORDER BY media_duracao DESC</code></pre>
+  </div>
+</div>
+
+<!-- S9 -->
+<div id="s9" class="section">
+  <div class="section-title">9. UNWIND — criar múltiplos nós a partir de uma lista</div>
+  <div class="section-sub">Padrão: UNWIND desempacota a lista e cria/encontra um nó por elemento</div>
+
+  <div class="ex">
+    <span class="bdg bdg-m">Médio</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Criar nós <code>:Genero</code> para <code>"Ação"</code>, <code>"Drama"</code> e <code>"Comédia"</code> a partir de uma lista, sem duplicar.</div>
+    <pre><code class="language-cypher">UNWIND ["Ação", "Drama", "Comédia"] AS nome_genero
+MERGE (g:Genero {nome: nome_genero})
+RETURN g.nome</code></pre>
+    <div class="why"><strong>Por quê:</strong> UNWIND transforma a lista em 3 linhas separadas. Para cada linha, o MERGE garante que não duplica. Mais eficiente do que 3 MERGEs separados.</div>
+  </div>
+
+  <div class="ex">
+    <span class="bdg bdg-m">Médio</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Criar nós <code>:Ator</code> para uma lista de nomes com atributos.</div>
+    <pre><code class="language-cypher">UNWIND [
+  {nome: "Marlon Brando", pais: "EUA"},
+  {nome: "Al Pacino",     pais: "EUA"},
+  {nome: "Robert De Niro",pais: "EUA"}
+] AS dados
+MERGE (a:Ator {nome: dados.nome})
+SET a.pais = dados.pais
+RETURN a.nome</code></pre>
+  </div>
+</div>
+
+<!-- S10 -->
+<div id="s10" class="section">
+  <div class="section-title">10. Traversal multi-hop — navegar por vários relacionamentos</div>
+  <div class="section-sub">Padrão: encadeie múltiplos relacionamentos no MATCH para percorrer o grafo em profundidade</div>
+
+  <div class="ex">
+    <span class="bdg bdg-d">Difícil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Espectadores que assistiram filmes do mesmo <code>:Genero</code> que <code>"Ana"</code> assistiu, sem incluir a própria Ana. Retorne nomes distintos.</div>
+    <pre><code class="language-cypher">MATCH (ana:Espectador {nome: "Ana"})
+      -[:ASSISTIU]->(f1:Filme)
+      -[:PERTENCE_A]->(g:Genero)
+      <-[:PERTENCE_A]-(f2:Filme)
+      <-[:ASSISTIU]-(outro:Espectador)
+WHERE outro <> ana
+RETURN DISTINCT outro.nome AS espectador_indicado,
+               g.nome      AS genero_em_comum
+ORDER BY espectador_indicado</code></pre>
+    <div class="why"><strong>Por quê:</strong> Partimos de Ana e navegamos: Filme → Gênero ← Filme (inverso) ← Espectador (inverso). O WHERE filtra Ana do resultado. DISTINCT evita repetir espectadores que compartilham vários gêneros.</div>
+  </div>
+
+  <div class="ex">
+    <span class="bdg bdg-d">Difícil</span>
+    <div class="ex-q"><strong>Exemplo:</strong> Atores que atuaram em filmes do mesmo diretor que dirigiu filmes com o ator <code>"Tom Hanks"</code>, sem incluir o próprio Tom Hanks.</div>
+    <pre><code class="language-cypher">MATCH (tom:Ator {nome: "Tom Hanks"})
+      -[:ATUA_EM]->(f1:Filme)
+      <-[:DIRIGIU]-(d:Diretor)
+      -[:DIRIGIU]->(f2:Filme)
+      <-[:ATUA_EM]-(outro:Ator)
+WHERE outro <> tom
+RETURN DISTINCT outro.nome AS ator_indicado,
+               d.nome      AS diretor_em_comum
+ORDER BY ator_indicado</code></pre>
+  </div>
+</div>
+
+<!-- QUICK REFERENCE -->
+<div class="schema" style="margin-top:32px;">
+  <h3>⚡ Referência Rápida — Mapeamento SQL → Cypher</h3>
+  <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:.83rem;">
+    <thead>
+      <tr style="background:rgba(240,147,251,.2);">
+        <th style="padding:10px;color:#f093fb;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);">SQL</th>
+        <th style="padding:10px;color:#fda085;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);">Cypher equivalente</th>
+        <th style="padding:10px;color:#c9b8ff;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);">Observação</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">SELECT ... FROM</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">MATCH ... RETURN</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">Principal operação de leitura</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">WHERE</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">WHERE</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">Mesma posição, mesma função</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">INSERT INTO</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">CREATE</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">Sempre insere, pode duplicar</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">INSERT OR IGNORE</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">MERGE</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">Encontra ou cria, idempotente</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">UPDATE ... SET</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">MATCH ... SET</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">Localiza depois altera</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">DELETE FROM</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">MATCH ... DETACH DELETE</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">DETACH remove arestas também</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">JOIN</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">(a)-[:REL]->(b)</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">Relacionamento no padrão</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">LEFT JOIN</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">OPTIONAL MATCH</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">Retorna null se não existir</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">GROUP BY / HAVING</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">WITH ... WHERE</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">WITH agrega, WHERE filtra</td></tr>
+      <tr><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);">ORDER BY ... DESC</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-family:monospace;color:#ffd700;">ORDER BY ... DESC</td><td style="padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);color:#94a3b8;">Mesma sintaxe</td></tr>
+      <tr><td style="padding:9px 10px;">DISTINCT</td><td style="padding:9px 10px;font-family:monospace;color:#ffd700;">RETURN DISTINCT</td><td style="padding:9px 10px;color:#94a3b8;">Elimina duplicatas no resultado</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>
+  <p>📖 Base de Apoio — Neo4j / Cypher · Univassouras 2026</p>
+  <p style="margin-top:6px;">Prof. Mesc. Diego Ramos Inácio</p>
+</footer>
+
+</div>
+</body>
+</html>
