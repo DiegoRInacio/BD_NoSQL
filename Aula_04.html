@@ -1557,14 +1557,32 @@ db.alunos.createIndex({ ativo: 1, idade: -1 })
 // Índice de texto para busca textual
 db.alunos.createIndex({ nome: "text", curso: "text" })
 
-// Índice esparso (só para docs que têm o campo)
+// Índice esparso (legado — só para docs que têm o campo)
 db.alunos.createIndex({ telefone: 1 }, { sparse: true })
+
+// ✅ Índice parcial (recomendado hoje no lugar do esparso — mais flexível)
+db.alunos.createIndex(
+  { telefone: 1 },
+  { partialFilterExpression: { telefone: { $exists: true } } }
+)
 
 // Índice com TTL (expira documentos automaticamente)
 db.logs.createIndex({ data_criacao: 1 }, { expireAfterSeconds: 86400 }) // 24h
 
 // Índice único (garante unicidade)
 db.alunos.createIndex({ email: 1 }, { unique: true })</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔬 O que cada tipo de índice está fazendo por dentro:</h3>
+                <ul>
+                    <li><strong>Simples:</strong> o MongoDB monta uma estrutura em árvore (B-tree) com os valores do campo já ordenados — por isso consegue localizar um valor, um intervalo (<code>$gt</code>/<code>$lt</code>) ou aplicar um <code>sort()</code> sem reler a coleção inteira.</li>
+                    <li><strong>Composto:</strong> é <strong>uma única</strong> B-tree cuja chave é a concatenação dos campos, na ordem em que foram declarados. Por isso a "regra do prefixo" existe: um índice <code>{ativo:1, nome:1}</code> serve consultas por <code>ativo</code> sozinho ou por <code>ativo</code>+<code>nome</code>, mas não ajuda uma consulta só por <code>nome</code>.</li>
+                    <li><strong>Texto:</strong> não é uma B-tree comum — o MongoDB primeiro <em>tokeniza</em> a string (separa em palavras, remove stopwords, aplica stemming) e indexa cada palavra. Por isso serve para achar "silva" dentro de "João Silva", mas não substitui um <code>$regex</code> de prefixo.</li>
+                    <li><strong>Esparso vs. Parcial:</strong> o esparso simplesmente exclui da árvore os documentos onde o campo não existe. O <strong>parcial</strong> faz o mesmo, mas com uma condição qualquer (<code>partialFilterExpression</code>) — por isso é hoje a recomendação oficial do MongoDB no lugar do esparso na maioria dos casos: mesmo ganho de espaço, com muito mais controle sobre quais documentos entram.</li>
+                    <li><strong>TTL:</strong> é um índice de campo único (data) que uma <em>thread em background</em> do servidor varre periodicamente (por padrão a cada 60s) apagando documentos vencidos — não é instantâneo no segundo exato em que expira.</li>
+                    <li><strong>Único:</strong> a checagem de duplicidade acontece <em>durante a escrita</em>: se o valor já existe na árvore do índice, o <code>insert</code>/<code>update</code> é rejeitado com erro de chave duplicada, antes mesmo de o documento ser gravado.</li>
+                </ul>
             </div>
 
             <div class="concept-box">
@@ -1618,14 +1636,14 @@ db.alunos.dropIndex({ nome: 1 })
 // Remover por nome
 db.alunos.dropIndex("nome_1")
 
-// Recriar todos os índices
-db.alunos.reIndex()
-
-// Compactar coleção
+// Compactar coleção (recupera espaço fragmentado em disco)
 db.runCommand({ compact: "alunos" })
 
 // Ver tamanho dos índices
 db.alunos.totalIndexSize()</code></pre>
+                    </div>
+                    <div class="warning">
+                        <strong>⚠️ Atualizado:</strong> <code>db.collection.reIndex()</code> está <strong>obsoleto desde o MongoDB 6.0</strong> — só funciona em standalone, trava a coleção com lock exclusivo enquanto roda, e não é suportado no Atlas. O WiredTiger (engine padrão) já mantém os índices sozinho; na prática você raramente precisa reconstruir tudo. Se precisar mesmo, prefira <code>dropIndex()</code> + <code>createIndex()</code> do índice específico.
                     </div>
                 </div>
             </div>
@@ -1646,6 +1664,17 @@ db.currentOp()
 
 // Status do servidor
 db.serverStatus().connections</code></pre>
+            </div>
+
+            <div class="concept-box">
+                <h3>🔬 O que esses comandos de manutenção fazem por dentro:</h3>
+                <ul>
+                    <li><strong>dropIndex():</strong> apaga a estrutura (B-tree) daquele índice do disco — libera espaço e acelera escritas, mas qualquer consulta que dependia dele volta a ser um COLLSCAN.</li>
+                    <li><strong>compact:</strong> reescreve a coleção e seus índices no disco pra eliminar espaço fragmentado (deixado por deletes/updates); é operação pesada, geralmente rodada em janela de manutenção, não no dia a dia.</li>
+                    <li><strong>totalIndexSize() / stats():</strong> só leem metadados que o servidor já mantém (via <code>$collStats</code>) — não escaneiam a coleção, então são baratos de chamar.</li>
+                    <li><strong>setProfilingLevel(2, ...):</strong> liga um log (coleção <code>system.profile</code>) de toda operação mais lenta que <code>slowms</code>. Nível 2 loga <em>tudo</em> — tem custo de performance, então normalmente se usa nível 1 (só operações lentas) ou se liga o 2 só temporariamente para depurar.</li>
+                    <li><strong>currentOp() / killOp():</strong> <code>currentOp()</code> lista as operações em andamento agora no servidor (útil pra achar uma query travada); <code>killOp(id)</code> a interrompe pelo id retornado.</li>
+                </ul>
             </div>
 
             <div class="code-container">
