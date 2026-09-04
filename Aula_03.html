@@ -269,6 +269,9 @@
                     <li>Exemplos práticos e dicas</li>
                 </ul>
             </div>
+            <div class="warning" style="margin-top: 20px;">
+                <strong>📌 Nota:</strong> no <code>mongosh</code> atual, a saída do <code>find()</code> já vem formatada (pretty print) por padrão. O método <code>.pretty()</code>, usado no shell legado, não é mais necessário — por isso não aparece nos comandos desta aula.
+            </div>
         </div>
 
         <!-- Slide 2: Conceitos CRUD -->
@@ -397,17 +400,17 @@
             
             <div class="code-container">
                 <div class="code-title">💡 Buscar TODOS os documentos</div>
-                <pre><code class="language-javascript">db["aula_crud"].find().pretty()</code></pre>
+                <pre><code class="language-javascript">db["aula_crud"].find()</code></pre>
             </div>
 
             <div class="code-container">
                 <div class="code-title">💡 Buscar por um campo específico</div>
-                <pre><code class="language-javascript">db["aula_crud"].find({ nome: "Zé da Manga" }).pretty()</code></pre>
+                <pre><code class="language-javascript">db["aula_crud"].find({ nome: "Zé da Manga" })</code></pre>
             </div>
 
             <div class="code-container">
                 <div class="code-title">💡 Buscar com filtro (idade maior que 22)</div>
-                <pre><code class="language-javascript">db["aula_crud"].find({ idade: { $gt: 22 } }).pretty()</code></pre>
+                <pre><code class="language-javascript">db["aula_crud"].find({ idade: { $gt: 22 } })</code></pre>
             </div>
 
             <div class="code-container">

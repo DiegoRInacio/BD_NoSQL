@@ -69,6 +69,7 @@
     </ul>
   </div>
   <div class="warning"><b>Pré-requisito:</b> use sistema_escolar • Garanta índices nos campos de junção (curso_id, etc.).</div>
+  <div class="warning"><strong>📌 Nota:</strong> no <code>mongosh</code> atual, a saída do <code>find()</code> já vem formatada (pretty print) por padrão. O método <code>.pretty()</code>, usado no shell legado, não é mais necessário — por isso não aparece nos comandos desta aula.</div>
 </div>
 
 <!-- Slide 2 -->
@@ -180,7 +181,7 @@
     <div>
       <div class="code-container">
         <div class="code-title">Ver contadores</div>
-        <pre><code class="language-javascript">db.contadores.find().pretty()</code></pre>
+        <pre><code class="language-javascript">db.contadores.find()</code></pre>
       </div>
       <div class="code-container">
         <div class="code-title">Incrementar matrícula</div>
