@@ -7,3 +7,5 @@
 !migracao_pg_neo4j.ipynb
 .claude/
 *.claude
+# arquivo interno gerado pela reorganizacao de Disciplinas
+HISTORICO_REMOVIDO.md

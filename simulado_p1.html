@@ -1,1011 +1,775 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulado P1 — Banco de Dados NoSQL</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 2rem 1rem;
-        }
-
-        .container {
-            max-width: 860px;
-            margin: 0 auto;
-        }
-
-        /* ── TELA INICIAL ─────────────────────────────────────────────── */
-        #tela-inicio {
-            background: rgba(255,255,255,0.97);
-            border-radius: 20px;
-            padding: 3rem 2.5rem;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        }
-
-        #tela-inicio h1 {
-            font-size: 2.4rem;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-
-        #tela-inicio .subtitle {
-            color: #7f8c8d;
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
-        }
-
-        .info-card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 1.2rem;
-            border-top: 4px solid #667eea;
-        }
-
-        .info-card .num {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .info-card p {
-            color: #6c757d;
-            font-size: 0.85rem;
-            margin-top: 0.3rem;
-        }
-
-        .aulas-lista {
-            text-align: left;
-            background: #f0f4ff;
-            border-radius: 12px;
-            padding: 1.2rem 1.5rem;
-            margin: 1.5rem 0;
-        }
-
-        .aulas-lista h3 {
-            color: #2c3e50;
-            margin-bottom: 0.8rem;
-            font-size: 1rem;
-        }
-
-        .aulas-lista ul {
-            list-style: none;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.4rem;
-        }
-
-        .aulas-lista li {
-            color: #555;
-            font-size: 0.9rem;
-            padding: 0.3rem 0;
-        }
-
-        .aulas-lista li::before {
-            content: "▸ ";
-            color: #667eea;
-        }
-
-        /* ── QUIZ ─────────────────────────────────────────────────────── */
-        #tela-quiz { display: none; }
-
-        .quiz-header {
-            background: rgba(255,255,255,0.97);
-            border-radius: 16px;
-            padding: 1.2rem 1.8rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            flex-wrap: wrap;
-            gap: 0.8rem;
-        }
-
-        .quiz-header .prog-info {
-            font-size: 0.95rem;
-            color: #555;
-        }
-
-        .quiz-header .prog-info strong {
-            color: #667eea;
-        }
-
-        .timer {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #2c3e50;
-            background: #f0f4ff;
-            padding: 0.4rem 1rem;
-            border-radius: 30px;
-        }
-
-        .timer.urgente { color: #e74c3c; animation: piscar 1s infinite; }
-
-        @keyframes piscar { 50% { opacity: 0.5; } }
-
-        .progress-bar-wrap {
-            width: 100%;
-            background: #e9ecef;
-            border-radius: 30px;
-            height: 8px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            border-radius: 30px;
-            transition: width 0.4s ease;
-        }
-
-        /* Indicadores de questão */
-        .indicators {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 1.2rem;
-        }
-
-        .ind {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-            background: rgba(255,255,255,0.6);
-            color: #555;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid rgba(255,255,255,0.4);
-        }
-
-        .ind.atual    { background: #667eea; color: white; border-color: #667eea; }
-        .ind.correto  { background: #27ae60; color: white; border-color: #27ae60; }
-        .ind.errado   { background: #e74c3c; color: white; border-color: #e74c3c; }
-        .ind.respondida { background: #95a5a6; color: white; border-color: #95a5a6; }
-
-        /* Card da questão */
-        .card-questao {
-            background: rgba(255,255,255,0.97);
-            border-radius: 20px;
-            padding: 2rem 2.5rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-        }
-
-        .badge-aula {
-            display: inline-block;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.3rem 0.9rem;
-            border-radius: 20px;
-            margin-bottom: 1rem;
-        }
-
-        .badge-tipo {
-            display: inline-block;
-            background: #f0f4ff;
-            color: #667eea;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.3rem 0.9rem;
-            border-radius: 20px;
-            margin-bottom: 1rem;
-            margin-left: 6px;
-        }
-
-        .enunciado {
-            font-size: 1.1rem;
-            color: #2c3e50;
-            line-height: 1.7;
-            margin-bottom: 1.5rem;
-        }
-
-        pre.codigo-contexto {
-            background: #1e1e2e;
-            color: #cdd6f4;
-            border-radius: 10px;
-            padding: 1rem 1.3rem;
-            font-size: 0.85rem;
-            line-height: 1.6;
-            overflow-x: auto;
-            margin: 1rem 0;
-            border-left: 4px solid #667eea;
-        }
-
-        /* Opções */
-        .opcoes { display: flex; flex-direction: column; gap: 0.8rem; }
-
-        .opcao {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding: 1rem 1.2rem;
-            border-radius: 12px;
-            border: 2px solid #e9ecef;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #fafafa;
-        }
-
-        .opcao:hover:not(.bloqueada) {
-            border-color: #667eea;
-            background: #f0f4ff;
-            transform: translateX(4px);
-        }
-
-        .opcao .letra {
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
-            border-radius: 50%;
-            background: #e9ecef;
-            color: #555;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-
-        .opcao .texto {
-            font-size: 0.95rem;
-            color: #2c3e50;
-            line-height: 1.5;
-            flex: 1;
-        }
-
-        .opcao pre {
-            background: #1e1e2e;
-            color: #cdd6f4;
-            border-radius: 8px;
-            padding: 0.7rem 1rem;
-            font-size: 0.8rem;
-            line-height: 1.5;
-            overflow-x: auto;
-            margin-top: 0.5rem;
-        }
-
-        /* estados de resposta */
-        .opcao.selecionada { border-color: #667eea; background: #eef1ff; }
-        .opcao.selecionada .letra { background: #667eea; color: white; }
-
-        .opcao.correta  { border-color: #27ae60 !important; background: #eafaf1 !important; }
-        .opcao.correta  .letra { background: #27ae60 !important; color: white !important; }
-
-        .opcao.errada   { border-color: #e74c3c !important; background: #fdf3f3 !important; }
-        .opcao.errada   .letra { background: #e74c3c !important; color: white !important; }
-
-        .opcao.bloqueada { cursor: default; }
-
-        /* Feedback */
-        .feedback {
-            display: none;
-            margin-top: 1.2rem;
-            padding: 1rem 1.3rem;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        .feedback.ok  { background: #eafaf1; border-left: 4px solid #27ae60; color: #1e8449; }
-        .feedback.nok { background: #fdf3f3; border-left: 4px solid #e74c3c; color: #922b21; }
-
-        /* Botões de navegação */
-        .nav-btns {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 1.8rem;
-            gap: 1rem;
-        }
-
-        .btn {
-            padding: 0.75rem 1.8rem;
-            border: none;
-            border-radius: 30px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary { background: #ecf0f1; color: #555; }
-        .btn-secondary:hover { background: #dfe6e9; }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .btn-primary:hover { transform: scale(1.04); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
-        .btn-primary:disabled { opacity: 0.5; cursor: default; transform: none; }
-
-        .btn-start {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            padding: 1rem 3rem;
-            border: none;
-            border-radius: 30px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.25s;
-            margin-top: 1.5rem;
-        }
-
-        .btn-start:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(102,126,234,0.45); }
-
-        /* ── TELA DE RESULTADO ────────────────────────────────────────── */
-        #tela-resultado {
-            display: none;
-            background: rgba(255,255,255,0.97);
-            border-radius: 20px;
-            padding: 3rem 2.5rem;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        }
-
-        #tela-resultado h2 {
-            font-size: 2rem;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-
-        .nota-display {
-            font-size: 5rem;
-            font-weight: bold;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin: 1rem 0;
-            line-height: 1;
-        }
-
-        .conceito {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .resultado-detalhe {
-            color: #7f8c8d;
-            font-size: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .res-por-aula {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
-        }
-
-        .res-aula-card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 1rem;
-            border-top: 4px solid #667eea;
-        }
-
-        .res-aula-card .titulo-aula { font-size: 0.8rem; color: #6c757d; margin-bottom: 0.4rem; }
-        .res-aula-card .acertos-aula { font-size: 1.5rem; font-weight: bold; color: #2c3e50; }
-
-        .gabarito-section {
-            text-align: left;
-            margin-top: 2rem;
-        }
-
-        .gabarito-section h3 {
-            font-size: 1.1rem;
-            color: #2c3e50;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #e9ecef;
-        }
-
-        .gabarito-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.8rem;
-            padding: 0.7rem 0;
-            border-bottom: 1px solid #f1f3f5;
-            font-size: 0.9rem;
-        }
-
-        .gabarito-item .qi { min-width: 28px; font-weight: bold; color: #667eea; }
-
-        .gabarito-item .resultado-icon { min-width: 24px; text-align: center; }
-
-        .gabarito-item .enun-resumo { color: #2c3e50; flex: 1; }
-
-        .gabarito-item .resp-info { font-size: 0.8rem; color: #6c757d; margin-top: 0.2rem; }
-
-        @media (max-width: 600px) {
-            .card-questao { padding: 1.3rem 1.2rem; }
-            #tela-inicio { padding: 2rem 1.2rem; }
-            .aulas-lista ul { grid-template-columns: 1fr; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulado P1 — BD NoSQL</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #5b2a86 0%, #23395d 100%);
+    min-height: 100vh; padding: 2rem 1rem; color: #2c3e50;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  .card {
+    background: rgba(255,255,255,0.97); border-radius: 18px;
+    padding: 2rem 2.2rem; box-shadow: 0 14px 34px rgba(0,0,0,0.18); margin-bottom: 1.4rem;
+  }
+  h1 {
+    font-size: 2.1rem; margin-bottom: 0.3rem;
+    background: linear-gradient(45deg,#7b2ff7,#f107a3);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .subtitle { color: #7f8c8d; font-size: 1.05rem; margin-bottom: 1.4rem; }
+  .info-grid {
+    display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr));
+    gap: 0.9rem; margin: 1.2rem 0;
+  }
+  .info-card { background: #f4effb; border-radius: 12px; padding: 1rem; border-top: 4px solid #7b2ff7; text-align: center; }
+  .info-card .num { font-size: 1.7rem; font-weight: bold; color: #7b2ff7; }
+  .info-card p { color: #6c757d; font-size: 0.82rem; margin-top: 0.25rem; }
+  .box { border-radius: 12px; padding: 1rem 1.3rem; margin: 1rem 0; font-size: 0.94rem; line-height: 1.6; }
+  .box.instr { background: #fff1f6; border-left: 4px solid #f107a3; }
+  .box.dados  { background: #f0edf9; border-left: 4px solid #7b2ff7; }
+  .box.aviso  { background: #fdecea; border-left: 4px solid #e74c3c; }
+  .box h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+  .box ul { padding-left: 1.2rem; margin-top: 0.3rem; }
+  .box li { margin-bottom: 0.25rem; }
+  pre {
+    background: #1e1e2e; color: #cdd6f4; border-radius: 10px; padding: 0.9rem 1.1rem;
+    font-size: 0.8rem; line-height: 1.55; overflow-x: auto; margin: 0.7rem 0;
+    font-family: 'Consolas','Courier New',monospace; white-space: pre;
+  }
+  .btn {
+    padding: 0.8rem 2rem; border: none; border-radius: 28px; font-size: 1rem;
+    font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s;
+  }
+  .btn-primary { background: linear-gradient(45deg,#7b2ff7,#f107a3); color: #fff; }
+  .btn-primary:hover { transform: scale(1.04); box-shadow: 0 6px 18px rgba(123,47,247,.45); }
+  .btn-ghost { background: #ecf0f1; color: #555; }
+  .btn-ghost:hover { background: #dfe6e9; }
+  .btn-ok { background: #27ae60; color: #fff; }
+  .btn-no { background: #e74c3c; color: #fff; }
+
+  #tela-quiz, #tela-resultado { display: none; }
+
+  .q-card { background: rgba(255,255,255,0.97); border-radius: 16px; padding: 1.6rem 1.8rem; box-shadow: 0 8px 22px rgba(0,0,0,.12); margin-bottom: 1.1rem; }
+  .badges { margin-bottom: 0.7rem; }
+  .badge { display:inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 16px; margin-right: 5px; }
+  .badge.aula { background: linear-gradient(45deg,#7b2ff7,#f107a3); color:#fff; }
+  .badge.tipo { background: #f0edf9; color: #7b2ff7; }
+  .badge.codigo { background: #263159; color: #cdd6f4; }
+  .q-num { font-weight: 700; color: #7b2ff7; margin-right: 6px; }
+  .enunciado { font-size: 1.02rem; line-height: 1.65; margin-bottom: 0.7rem; }
+  .enunciado code, .gab code { background: #f0edf9; padding: 1px 5px; border-radius: 4px; font-family: 'Consolas',monospace; font-size: 0.88em; }
+  textarea {
+    width: 100%; min-height: 100px; resize: vertical; padding: 0.8rem 1rem;
+    border: 2px solid #e3e6f0; border-radius: 10px; font-family: 'Consolas','Courier New',monospace;
+    font-size: 0.9rem; line-height: 1.5; color: #2c3e50;
+  }
+  textarea:focus { outline: none; border-color: #7b2ff7; }
+
+  .gab { display: none; margin-top: 1rem; border-top: 2px dashed #d0c8e8; padding-top: 0.9rem; }
+  .gab h4 { font-size: 0.92rem; color: #5b2a86; margin-bottom: 0.4rem; }
+  .gab .exp { font-size: 0.92rem; line-height: 1.6; color: #444; margin-top: 0.5rem; }
+  .gab-txt { font-size: 0.95rem; line-height: 1.6; }
+  .self { margin-top: 0.9rem; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+  .self .btn { padding: 0.45rem 1.1rem; font-size: 0.85rem; border-radius: 20px; }
+  .self .marca { font-weight: 700; font-size: 0.9rem; }
+  .q-card.acertou { border-left: 5px solid #27ae60; }
+  .q-card.errou   { border-left: 5px solid #e74c3c; }
+
+  .barra-fixa {
+    position: sticky; bottom: 0; background: rgba(255,255,255,0.97); border-radius: 14px;
+    padding: 1rem 1.4rem; box-shadow: 0 -6px 20px rgba(0,0,0,.14); display: flex;
+    justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.5rem;
+  }
+  .placar { font-size: 1.05rem; font-weight: 700; color: #7b2ff7; }
+
+  .nota-final { font-size: 4rem; font-weight: 800; background: linear-gradient(45deg,#7b2ff7,#f107a3); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height: 1; margin: 0.6rem 0; }
+  .conceito { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .res-aula { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 0.8rem; margin: 1.4rem 0; }
+  .res-aula-card { background: #f6f4fb; border-radius: 10px; padding: 0.8rem; text-align: center; border-top: 4px solid #7b2ff7; }
+  .res-aula-card .t { font-size: 0.75rem; color: #6c757d; }
+  .res-aula-card .v { font-size: 1.25rem; font-weight: 700; }
+  .hist { text-align: left; margin-top: 1.4rem; }
+  .hist h3 { font-size: 1rem; margin-bottom: 0.6rem; border-bottom: 2px solid #eee; padding-bottom: 0.3rem; }
+  .hist-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f1f3f5; font-size: 0.88rem; }
+  .foot { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.8rem; margin-top: 1rem; }
+  .salvo { font-size: 0.82rem; color: #27ae60; font-weight: 600; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    @page { margin: 1.3cm; }
+    .barra-fixa, .btn { display: none !important; }
+    textarea { border: 1px solid #bbb; min-height: 0; }
+    .q-card, .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: auto; }
+    .q-card h3, .q-card h4, .badges { page-break-after: avoid; }
+    pre { white-space: pre-wrap; word-break: break-word; overflow: visible; font-size: 7.4pt; }
+    .gab { display: block !important; }
+  }
+</style>
 </head>
 <body>
-
-<!-- ─── TELA INICIAL ─────────────────────────────────────────────────────── -->
 <div class="container">
-<div id="tela-inicio">
-    <h1>Simulado P1</h1>
-    <p class="subtitle">Banco de Dados Não Relacional — NoSQL</p>
 
-    <div class="info-grid">
-        <div class="info-card"><div class="num">20</div><p>Questões</p></div>
-        <div class="info-card"><div class="num">40</div><p>Minutos</p></div>
-        <div class="info-card"><div class="num">5</div><p>Aulas cobertas</p></div>
-        <div class="info-card"><div class="num">10</div><p>Pontos máximos</p></div>
-    </div>
+<!-- ============ TELA INICIAL ============ -->
+<div id="tela-inicio" class="card">
+  <h1>Simulado P1</h1>
+  <p class="subtitle">Banco de Dados N&atilde;o Relacional &mdash; NoSQL &middot; Aulas 01 a 04 (at&eacute; CRUD Avan&ccedil;ado)</p>
 
-    <div class="aulas-lista">
-        <h3>Conteúdo abordado</h3>
-        <ul>
-            <li><strong>Aula 01</strong> — História, CAP, ACID vs BASE, Taxonomia</li>
-            <li><strong>Aula 02</strong> — Evolução dos BDs, SQL vs NoSQL</li>
-            <li><strong>Aula 03</strong> — CRUD MongoDB (mongosh + PyMongo)</li>
-            <li><strong>Aula 04</strong> — CRUD Avançado, Agregações, Índices</li>
-            <li><strong>Aula 05</strong> — $lookup, Relacionamentos, Pipeline</li>
-        </ul>
-    </div>
+  <div class="info-grid">
+    <div class="info-card"><div class="num">62</div><p>Quest&otilde;es abertas</p></div>
+    <div class="info-card"><div class="num">&infin;</div><p>Sem tempo</p></div>
+    <div class="info-card"><div class="num">0</div><p>Material de apoio</p></div>
+    <div class="info-card"><div class="num">1/0</div><p>Corre&ccedil;&atilde;o bin&aacute;ria</p></div>
+  </div>
 
-    <p style="color:#7f8c8d;font-size:0.9rem;">Cada questão correta vale <strong>0,5 ponto</strong>. Você pode revisar as questões antes de finalizar.</p>
+  <div class="box instr">
+    <h3>Como funciona &mdash; leia</h3>
+    <ul>
+      <li><strong>Toda resposta &eacute; aberta</strong>: voc&ecirc; digita texto, n&uacute;mero ou c&oacute;digo (mongosh ou Python/PyMongo). N&atilde;o h&aacute; alternativas.</li>
+      <li>Ao clicar em <strong>Corrigir</strong>, cada quest&atilde;o revela o gabarito comentado e voc&ecirc; se autoavalia: <strong>Acertei</strong> ou <strong>Errei</strong>. Corre&ccedil;&atilde;o <strong>bin&aacute;ria</strong>: nota = acertos / 62 &times; 10.</li>
+      <li><strong>Este simulado &eacute; propositalmente mais dif&iacute;cil que a prova</strong> e <strong>N&Atilde;O traz nenhum material de apoio</strong>. A prova te d&aacute; um <em>exemplo resolvido</em> e uma folha de conceitos; aqui, nada. Se voc&ecirc; resolve isto sem consulta, a prova &eacute; tranquila.</li>
+      <li>As quest&otilde;es <strong>n&atilde;o s&atilde;o as mesmas da prova</strong> &mdash; s&atilde;o cen&aacute;rios diferentes que cobram <strong>o mesmo racioc&iacute;nio</strong>: modelagem, CRUD, filtros, arrays, agrega&ccedil;&atilde;o, <code>$lookup</code>, &iacute;ndices e os conceitos das Aulas 01&ndash;02.</li>
+      <li>Respostas e tentativas ficam salvas <strong>neste navegador</strong>. Use <strong>Exportar PDF</strong> para uma c&oacute;pia.</li>
+    </ul>
+  </div>
 
-    <button class="btn-start" onclick="iniciarSimulado()">Iniciar Simulado</button>
+  <div class="box dados">
+    <h3>Contexto &mdash; banco <code>frota_db</code> (transportadora / gest&atilde;o de frota)</h3>
+    <p>Todas as quest&otilde;es se referem a este banco. Os dados vieram de v&aacute;rias filiais e <strong>est&atilde;o sujos de prop&oacute;sito</strong>.</p>
+<pre>
+// coleção: veiculos
+{ _id, placa: " abc1d23 ",        // aparece com espaços e caixa trocada
+  modelo, tipo: "van"|"caminhao"|"moto", ano,
+  km_rodados: 84000,              // em alguns docs vem como "84000" (string)
+  ativo: true,                    // aparece como true, "sim" e 1
+  filial, tags: [ ... ],
+  abastecimentos: [ ISODate(...), ISODate(...), ... ],   // array append-only, cresce sem limite
+  manutencoes: [ { data: ISODate(...), tipo, custo } ]   // NEM todo veículo tem esse campo
+}
 
-    <p style="margin-top:1.5rem;font-size:0.8rem;color:#aaa;">Prof. Mesc. Diego Ramos Inácio · Univassouras · 2025.2</p>
+// coleção: motoristas
+{ _id, nome, cnh, categoria_cnh: "B"|"D"|"E", cidade,
+  terceirizado: true|false, habilitacoes: [ ... ],
+  admissao: ISODate(...) }        // em alguns docs vem como "2023-02-10" (string)
+
+// coleção: viagens
+{ _id, veiculo_placa: "ABC1D23",
+  motorista_id: ObjectId(...),    // em ALGUMAS viagens foi gravado como String (bug)  -> aponta para motoristas._id
+  origem, destino, km, carga_kg,
+  status: "concluida"|"em_curso"|"cancelada",
+  saida: ISODate(...),
+  itens_entrega: [ { nf, valor } ] }
+</pre>
+    <p><strong>Problemas conhecidos:</strong> <code>placa</code> com espa&ccedil;os/caixa; <code>ativo</code> com tipos mistos;
+      <code>km_rodados</code> ora n&uacute;mero ora string; <code>admissao</code> ora data ora string;
+      <code>viagens.motorista_id</code> ora ObjectId ora String; <code>abastecimentos</code> sem limite de tamanho;
+      nem todo ve&iacute;culo tem <code>manutencoes</code>.</p>
+  </div>
+
+  <button class="btn btn-primary" onclick="iniciar()">Iniciar Simulado</button>
+  <p style="margin-top:1rem;font-size:0.8rem;color:#aaa;">Prof. Mesc. Diego Ramos In&aacute;cio &middot; Univassouras &middot; 2026.2</p>
 </div>
 
-<!-- ─── TELA DO QUIZ ──────────────────────────────────────────────────────── -->
+<!-- ============ TELA QUIZ ============ -->
 <div id="tela-quiz">
-    <div class="quiz-header">
-        <div class="prog-info">
-            Questão <strong id="num-atual">1</strong> de <strong>20</strong>
-        </div>
-        <div class="timer" id="timer-display">40:00</div>
-        <div style="width:100%">
-            <div class="progress-bar-wrap">
-                <div class="progress-bar-fill" id="progress-bar" style="width:5%"></div>
-            </div>
-        </div>
+  <div class="card" style="padding:1.2rem 1.6rem;">
+    <strong>Simulado P1 &mdash; frota_db.</strong> Responda o que conseguir, <strong>sem consultar nada</strong>.
+    Resposta em branco conta como erro na autoavalia&ccedil;&atilde;o.
+    <span id="rascunho-aviso" class="salvo"></span>
+  </div>
+  <div id="lista-questoes"></div>
+  <div class="barra-fixa">
+    <div class="placar" id="placar-barra">Responda e clique em Corrigir</div>
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="limparRascunho()">Limpar respostas</button>
+      <button class="btn btn-primary" id="btn-corrigir" onclick="corrigir()">&#10003; Corrigir Simulado</button>
+      <button class="btn btn-primary" id="btn-finalizar" style="display:none" onclick="finalizar()">Ver resultado</button>
     </div>
-
-    <div class="indicators" id="indicators"></div>
-
-    <div class="card-questao" id="card-questao"></div>
+  </div>
 </div>
 
-<!-- ─── TELA DE RESULTADO ────────────────────────────────────────────────── -->
-<div id="tela-resultado">
-    <h2 id="res-titulo"></h2>
-    <div class="nota-display" id="res-nota"></div>
-    <div class="conceito" id="res-conceito"></div>
-    <div class="resultado-detalhe" id="res-detalhe"></div>
-
-    <div class="res-por-aula" id="res-por-aula"></div>
-
-    <div class="gabarito-section">
-        <h3>Gabarito detalhado</h3>
-        <div id="gabarito-lista"></div>
-    </div>
-
-    <div style="margin-top:2rem;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
-        <button class="btn btn-secondary" onclick="location.reload()">Refazer Simulado</button>
-        <button class="btn btn-primary" onclick="window.location.href='index.html'">Voltar ao Portal</button>
-    </div>
-
-    <p style="margin-top:2rem;font-size:0.8rem;color:#aaa;">Prof. Mesc. Diego Ramos Inácio · Univassouras · 2025.2</p>
+<!-- ============ TELA RESULTADO ============ -->
+<div id="tela-resultado" class="card" style="text-align:center;">
+  <h2 style="color:#2c3e50;">Resultado do Simulado</h2>
+  <div class="nota-final" id="res-nota">0.0</div>
+  <div class="conceito" id="res-conceito"></div>
+  <div style="color:#7f8c8d;" id="res-detalhe"></div>
+  <div class="res-aula" id="res-por-aula"></div>
+  <p class="salvo" id="res-salvo"></p>
+  <div class="hist" id="res-hist"></div>
+  <div style="margin-top:1.6rem;display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap;">
+    <button class="btn btn-ghost" onclick="voltarQuiz()">&larr; Rever quest&otilde;es</button>
+    <button class="btn btn-primary" onclick="window.print()">Exportar PDF</button>
+    <button class="btn btn-primary" onclick="refazer()">Refazer Simulado</button>
+    <button class="btn btn-ghost" onclick="window.location.href='index.html'">Portal</button>
+  </div>
 </div>
+
+<p class="foot">HTML, CSS e JS puro &middot; autoavalia&ccedil;&atilde;o honesta &mdash; o objetivo &eacute; estudar, n&atilde;o a nota.</p>
 </div>
 
 <script>
-// ─── BANCO DE QUESTÕES ────────────────────────────────────────────────────────
-const questoes = [
-  // ── AULA 01 ──────────────────────────────────────────────────────────────
-  {
-    aula: "Aula 01",
-    tipo: "Conceito",
-    enunciado: "Sobre o Teorema CAP, qual das afirmativas está <strong>CORRETA</strong>?",
-    opcoes: [
-      "Um sistema distribuído pode garantir Consistência, Disponibilidade e Tolerância a Partições ao mesmo tempo.",
-      "Em caso de partição de rede, o sistema precisa escolher entre Consistência (C) e Disponibilidade (A).",
-      "O CAP Theorem se aplica exclusivamente a bancos de dados relacionais.",
-      "Tolerância a Partições é um requisito opcional em sistemas distribuídos modernos."
-    ],
-    correta: 1,
-    feedback: "O Teorema CAP afirma que, em um sistema distribuído, não é possível garantir C, A e P ao mesmo tempo. Quando ocorre uma partição de rede, o sistema deve optar por manter Consistência (recusar leituras/escritas) ou Disponibilidade (responder mesmo com dados possivelmente desatualizados)."
-  },
-  {
-    aula: "Aula 01",
-    tipo: "Conceito",
-    enunciado: "Qual das opções descreve <strong>corretamente</strong> o modelo BASE adotado pelos sistemas NoSQL?",
-    opcoes: [
-      "Basically Available, Structured, Eventually consistent",
-      "Backup Available, Stable state, Eventually consistent",
-      "Basically Available, Soft state, Eventually consistent",
-      "Basically Available, Strong state, Eventually consistent"
-    ],
-    correta: 2,
-    feedback: "BASE é o acrônimo de Basically Available (sistema permanece disponível), Soft state (estado pode mudar ao longo do tempo mesmo sem entradas) e Eventually consistent (consistência é alcançada eventualmente). É o contraponto ao modelo ACID dos bancos relacionais."
-  },
-  {
-    aula: "Aula 01",
-    tipo: "Caso de uso",
-    enunciado: "Uma plataforma de recomendação precisa mapear relacionamentos entre usuários e produtos, percorrendo caminhos de conexões para identificar padrões. Qual tipo de banco NoSQL é <strong>mais indicado</strong>?",
-    opcoes: [
-      "Chave-Valor (ex.: Redis) — alto desempenho em cache",
-      "Colunas (ex.: Cassandra) — otimizado para séries temporais",
-      "Documentos (ex.: MongoDB) — esquema flexível",
-      "Grafos (ex.: Neo4j) — consultas de caminhos e relacionamentos"
-    ],
-    correta: 3,
-    feedback: "Bancos de Grafos como Neo4j são ideais para representar e consultar relacionamentos complexos. A estrutura de nós e arestas permite percorrer conexões (amigos de amigos, recomendações por afinidade) de forma muito mais eficiente do que JOINs em tabelas relacionais."
-  },
-  {
-    aula: "Aula 01",
-    tipo: "Conceito",
-    enunciado: "Em qual dos cenários abaixo o banco de dados <strong>relacional</strong> seria a escolha mais adequada em comparação ao NoSQL?",
-    opcoes: [
-      "Catálogo de produtos de e-commerce com atributos variáveis por categoria",
-      "Sistema bancário com transações financeiras que envolvem múltiplas contas",
-      "Plataforma de redes sociais com bilhões de posts gerados por usuários",
-      "Armazenamento de sessões de usuário com expiração automática"
-    ],
-    correta: 1,
-    feedback: "Sistemas financeiros com transações complexas entre múltiplas entidades são casos clássicos onde ACID e integridade referencial do modelo relacional são essenciais. A atomicidade garante que transferências entre contas sejam totais ou não ocorram. As demais opções têm boa aderência ao NoSQL."
-  },
+// ================= BANCO DE QUESTÕES =================
+const QUESTOES = [
 
-  // ── AULA 02 ──────────────────────────────────────────────────────────────
-  {
-    aula: "Aula 02",
-    tipo: "Conceito",
-    enunciado: "O termo \"NoSQL\" foi cunhado em qual ano e por quem, de acordo com a linha do tempo apresentada na Aula 02?",
-    opcoes: [
-      "2006, por Eric Schmidt (Google)",
-      "2009, por Eric Evans",
-      "2007, por Jeff Bezos (Amazon)",
-      "2004, por Larry Page (Google)"
-    ],
-    correta: 1,
-    feedback: "O termo \"NoSQL\" foi cunhado por Eric Evans em 2009, para um encontro sobre bancos de dados distribuídos. O significado evoluiu para \"Not Only SQL\" — indicando que esses sistemas não substituem o SQL, mas complementam com outros modelos de armazenamento."
-  },
-  {
-    aula: "Aula 02",
-    tipo: "Conceito",
-    enunciado: "Qual das características abaixo é uma <strong>limitação</strong> reconhecida dos bancos de dados relacionais tradicionais em cenários de grande escala?",
-    opcoes: [
-      "Esquema flexível que permite evolução sem migrações",
-      "Escalabilidade horizontal nativa em múltiplos servidores",
-      "Esquema rígido com dificuldade para mudanças estruturais",
-      "Alta disponibilidade nativa sem necessidade de configuração"
-    ],
-    correta: 2,
-    feedback: "Bancos relacionais possuem esquema rígido (DDL), o que dificulta alterações estruturais em produção e em cenários onde a estrutura dos dados evolui com frequência. Escalabilidade horizontal e alta disponibilidade nativa são características mais associadas aos bancos NoSQL."
-  },
-  {
-    aula: "Aula 02",
-    tipo: "Código",
-    enunciado: "Um desenvolvedor quer buscar no MongoDB todos os usuários com <code>idade &gt; 25</code>. Qual é a consulta <strong>correta</strong> no mongosh?",
-    opcoes: [
-      "SELECT * FROM usuarios WHERE idade > 25",
-      "db.usuarios.find({ idade: { $gt: 25 } })",
-      "db.usuarios.find({ idade: > 25 })",
-      "db.usuarios.select({ idade: { $greater: 25 } })"
-    ],
-    correta: 1,
-    feedback: "No MongoDB, operadores de comparação são prefixados com $. O operador $gt significa \"greater than\" (maior que). A sintaxe correta é { campo: { $gt: valor } }. A opção A é SQL, C é sintaxe inválida, e D usa método select e operador inexistentes."
-  },
-  {
-    aula: "Aula 02",
-    tipo: "Caso de uso",
-    enunciado: "Para armazenar sessões de usuário que expiram automaticamente, com necessidade de acesso em <strong>sub-milissegundos</strong>, qual banco NoSQL seria mais adequado?",
-    opcoes: [
-      "MongoDB — banco de documentos com esquema flexível",
-      "Cassandra — banco de colunas para alta escrita",
-      "Redis — banco chave-valor in-memory",
-      "Neo4j — banco de grafos para relacionamentos"
-    ],
-    correta: 2,
-    feedback: "Redis é um banco chave-valor que armazena dados em memória (in-memory), garantindo latências em sub-milissegundos. Possui suporte nativo a TTL (Time To Live) para expirar chaves automaticamente, tornando-o ideal para sessões, cache e filas de mensagens."
-  },
+// ---------- BLOCO A — Fundamentos (Aulas 01–02) ----------
+{
+  aula:"Aula 01", tipo:"Conceito",
+  enunciado:"Os tablets nos caminhões registram entregas <b>offline</b> e sobem os dados quando o veículo volta à área de cobertura. Em termos do <b>Teorema CAP</b>: qual garantia essa operação prioriza, qual abre mão, e que sigla (CP ou AP) a descreve? Por que isso é aceitável para 'registro de entrega' e NÃO seria para 'reserva de vaga de carga num armazém'?",
+  gab:"<b>AP</b>: prioriza Disponibilidade (A) + Tolerância a Partição (P), abre mão de Consistência forte (C) — aceita consistência eventual. Registro de entrega é <i>append-only</i> e idempotente na leitura: ver um registro com atraso não corrompe nada. Reserva de vaga exige consistência forte (CP) para não alocar a mesma vaga a duas cargas.",
+  exp:"Sob partição, escolhe-se responder com dado possivelmente velho (A) ou recusar para não divergir (C). Evento histórico tolera A; alocação de recurso único exige C."
+},
+{
+  aula:"Aula 01", tipo:"Conceito",
+  enunciado:"Escreva o que cada letra de <b>BASE</b> significa e dê, para cada uma, um exemplo concreto no contexto da frota.",
+  gab:"<b>B</b>asically Available: o app de registro responde mesmo com uma réplica em manutenção. <b>S</b>oft state: o total de km da filial pode mudar sozinho enquanto os tablets ainda sincronizam. <b>E</b>ventually consistent: após a sincronização, todas as filiais mostram os mesmos números.",
+  exp:"BASE é o contraponto de ACID: troca consistência imediata por disponibilidade e escala."
+},
+{
+  aula:"Aula 01", tipo:"Conceito",
+  enunciado:"Contraste <b>ACID</b> e <b>BASE</b> em uma frase cada. Depois diga qual sistema vai em qual e por quê: (a) folha de pagamento dos motoristas; (b) telemetria de posição enviada por 400 veículos a cada 5 segundos.",
+  gab:"ACID = transações 'tudo ou nada', consistência forte e isolamento (típico do relacional). BASE = disponível, estado flexível, consistência eventual (típico do NoSQL). (a) Folha → ACID: não pode pagar duas vezes nem deixar a transação pela metade. (b) Telemetria → BASE/NoSQL: write-heavy, tolera perda/atraso pontual, precisa escalar horizontalmente.",
+  exp:""
+},
+{
+  aula:"Aula 01", tipo:"Caso de uso",
+  enunciado:"Para cada necessidade, indique o <b>tipo de banco NoSQL</b> (chave-valor, documento, coluna/wide-column, grafo) e justifique em uma linha:<br>(a) token de sessão do motorista no app, com expiração automática;<br>(b) 'quais motoristas já rodaram juntos na mesma viagem', para montar duplas;<br>(c) posição GPS de 400 veículos gravada a cada 5s durante 2 anos;<br>(d) ficha do veículo, com campos que variam por tipo (moto não tem 'eixos').",
+  gab:"(a) <b>Chave-valor</b> (Redis) — O(1) e TTL nativo. (b) <b>Grafo</b> (Neo4j) — travessia de relacionamentos. (c) <b>Coluna / wide-column</b> (Cassandra) — write-heavy, série temporal, consulta por faixa de tempo. (d) <b>Documento</b> (MongoDB) — schema flexível, campos opcionais.",
+  exp:""
+},
+{
+  aula:"Aula 01", tipo:"Conceito",
+  enunciado:"Cite <b>dois cenários</b> desta empresa em que o banco <b>relacional</b> (PostgreSQL) continua sendo a escolha certa em vez de NoSQL, e explique por quê.",
+  gab:"(1) Faturamento / contas a pagar e receber — transações ACID entre várias tabelas, integridade referencial, rollback. (2) Conciliação fiscal e auditoria — consultas relacionais complexas e não previstas, JOINs frequentes, relatórios ad-hoc. Também vale: equipe madura em SQL e volume que ainda cabe em scale-up.",
+  exp:"Regra da Aula 01: NoSQL não é 'melhor', é adequado a trade-offs explícitos."
+},
+{
+  aula:"Aula 02", tipo:"Conceito",
+  enunciado:"O time vem de PostgreSQL e vai migrar a ficha do veículo para MongoDB. Liste <b>três diferenças práticas</b> (esquema, escalabilidade, relacionamento) e <b>uma armadilha comum</b> nessa migração.",
+  gab:"Esquema: de DDL fixo (ALTER TABLE) para schema flexível — a validação vira responsabilidade da aplicação. Escala: de vertical (scale-up) para horizontal (sharding). Relacionamento: sem JOIN nativo — Embed ou Reference + <code>$lookup</code>, modelando 'por consulta'. Armadilha: replicar a modelagem normalizada (uma coleção por tabela e <code>$lookup</code> em tudo) em vez de embutir o que se lê junto.",
+  exp:""
+},
+{
+  aula:"Aula 02", tipo:"Conceito",
+  enunciado:"'NoSQL' hoje se lê <b>'Not Only SQL'</b>. Explique o que isso significa na prática para uma empresa que mantém PostgreSQL para o faturamento e adota MongoDB para telemetria e fichas de veículos.",
+  gab:"Significa que o NoSQL <b>não substitui</b> o relacional — complementa. Cada carga vai para a ferramenta adequada (<i>polyglot persistence</i> / <i>database per service</i>): faturamento no PostgreSQL (ACID, relatórios), telemetria e fichas no MongoDB (escala, flexibilidade). A decisão é por trade-off explícito.",
+  exp:""
+},
 
-  // ── AULA 03 ──────────────────────────────────────────────────────────────
-  {
-    aula: "Aula 03",
-    tipo: "Código",
-    enunciado: "Para inserir <strong>múltiplos documentos</strong> de uma só vez na coleção <code>alunos</code>, qual comando é o mais adequado no mongosh?",
-    opcoes: [
-      "db.alunos.insertOne([{nome: \"Ana\"}, {nome: \"João\"}])",
-      "db.alunos.insertMany([{nome: \"Ana\"}, {nome: \"João\"}])",
-      "db.alunos.insert({nome: \"Ana\"}, {nome: \"João\"})",
-      "db.alunos.addMany([{nome: \"Ana\"}, {nome: \"João\"}])"
-    ],
-    correta: 1,
-    feedback: "O método correto é insertMany(), que recebe um array de documentos. insertOne() aceita apenas um documento (não um array de documentos). O método insert() foi depreciado em versões modernas do MongoDB. addMany() não existe."
-  },
-  {
-    aula: "Aula 03",
-    tipo: "Código",
-    enunciado: "Um professor quer <strong>incrementar</strong> a nota de um aluno em 2 pontos, sem sobrescrever o valor atual. Qual operador e comando MongoDB estão <strong>corretos</strong>?",
-    opcoes: [
-      "db.alunos.updateOne({nome: \"João\"}, {$set: {nota: nota+2}})",
-      "db.alunos.updateOne({nome: \"João\"}, {$inc: {nota: 2}})",
-      "db.alunos.updateOne({nome: \"João\"}, {nota: +2})",
-      "db.alunos.updateOne({nome: \"João\"}, {$add: {nota: 2}})"
-    ],
-    correta: 1,
-    feedback: "O operador $inc (increment) é específico para somar (ou subtrair com valor negativo) ao valor atual de um campo numérico. $set definiria um valor fixo. A opção C não é sintaxe válida do MongoDB. $add não existe como operador de update."
-  },
-  {
-    aula: "Aula 03",
-    tipo: "Código",
-    enunciado: "Para remover <strong>apenas o primeiro</strong> documento com <code>status: \"inativo\"</code> da coleção <code>usuarios</code>, qual comando é correto?",
-    opcoes: [
-      "db.usuarios.deleteMany({ status: \"inativo\" })",
-      "db.usuarios.remove({ status: \"inativo\" })",
-      "db.usuarios.deleteOne({ status: \"inativo\" })",
-      "db.usuarios.drop({ status: \"inativo\" })"
-    ],
-    correta: 2,
-    feedback: "deleteOne() remove apenas o primeiro documento que satisfaz o filtro. deleteMany() removeria todos. remove() foi depreciado. drop() remove a coleção inteira (sem aceitar filtros de documentos específicos)."
-  },
-  {
-    aula: "Aula 03",
-    tipo: "Código",
-    enunciado: "Qual consulta retorna produtos com <code>preco</code> entre <strong>10 e 50 (inclusive)</strong>?",
-    opcoes: [
-      "db.produtos.find({ preco: { $gt: 10, $lt: 50 } })",
-      "db.produtos.find({ preco: { $gte: 10, $lte: 50 } })",
-      "db.produtos.find({ preco: [10, 50] })",
-      "db.produtos.find({ preco: { $between: [10, 50] } })"
-    ],
-    correta: 1,
-    feedback: "$gte = \"greater than or equal\" (maior ou igual) e $lte = \"less than or equal\" (menor ou igual). A opção A usa $gt e $lt que excluem os limites. A opção C não é sintaxe válida para range. $between não existe no MongoDB."
-  },
+// ---------- BLOCO B — Create e modelagem ----------
+{
+  aula:"Aula 03", tipo:"Código", code:true,
+  enunciado:"Escreva o <code>insertMany</code> que cadastra estes dois veículos, respeitando os tipos:<br>• placa \"ABC1D23\", modelo \"Sprinter\", tipo \"van\", ano 2021, km_rodados 84000, ativo (verdadeiro), filial \"Saquarema\", tags [\"refrigerado\"], uma manutenção {data 10/03/2024, tipo \"revisao\", custo 1200};<br>• placa \"EFG4H56\", modelo \"Cargo 816\", tipo \"caminhao\", ano 2019, km_rodados 210000, ativo (falso), filial \"Marica\", tags vazio, manutencoes vazio.",
+  gab:'db.veiculos.insertMany([\n  { placa: "ABC1D23", modelo: "Sprinter", tipo: "van", ano: 2021,\n    km_rodados: 84000, ativo: true, filial: "Saquarema", tags: ["refrigerado"],\n    manutencoes: [ { data: ISODate("2024-03-10"), tipo: "revisao", custo: 1200 } ] },\n  { placa: "EFG4H56", modelo: "Cargo 816", tipo: "caminhao", ano: 2019,\n    km_rodados: 210000, ativo: false, filial: "Marica", tags: [],\n    manutencoes: [] }\n])',
+  exp:"Datas com <code>ISODate</code>, booleano e número <b>sem aspas</b>, arrays presentes mesmo quando vazios."
+},
+{
+  aula:"Aula 03", tipo:"Diagnóstico",
+  enunciado:"Um estagiário inseriu: <code>{ ativo: \"true\", ano: \"2021\", admissao: \"2021-05-01\", manutencoes: \"nenhuma\" }</code>. Aponte <b>quatro</b> problemas de tipo e diga como cada um quebra consultas futuras.",
+  gab:"1) <code>ativo: \"true\"</code> é string, não boolean → <code>find({ativo:true})</code> não acha. 2) <code>ano: \"2021\"</code> string → comparações/ordenação numérica falham (ordena como texto). 3) <code>admissao</code> string, não Date → filtro por intervalo de data não funciona. 4) <code>manutencoes: \"nenhuma\"</code> string, não array → <code>$size</code>, <code>$elemMatch</code>, <code>$push</code> quebram. Correção: reinserir com <code>true</code>, <code>2021</code>, <code>ISODate(...)</code>, <code>[]</code>.",
+  exp:"BSON é tipado; string \"2021\" ≠ número 2021 ≠ ISODate."
+},
+{
+  aula:"Aula 04", tipo:"Modelagem",
+  enunciado:"O array <code>abastecimentos</code> de um veículo movimentado já tem 9.000 datas e cresce ~15/dia. Aponte <b>dois problemas</b> e proponha o modelo alternativo (esboço da coleção + índice).",
+  gab:"Problemas: (1) crescimento <b>ilimitado</b> → risco do teto de <b>16 MB</b> por documento; (2) toda leitura do veículo carrega o array inteiro (rede/RAM) e todo <code>update</code> reescreve um documento grande; (3) difícil paginar/filtrar por período. Alternativa (Reference): coleção <code>abastecimentos { _id, veiculo_id, data, litros, valor }</code> com índice <code>{ veiculo_id: 1, data: -1 }</code>; opcionalmente o <i>bucket pattern</i> (1 doc por veículo/mês).",
+  exp:"Array unbounded é anti-padrão de modelagem."
+},
+{
+  aula:"Aula 02", tipo:"Conceito",
+  enunciado:"Na mesma coleção <code>veiculos</code>, uma van tem o campo <code>capacidade_paletes</code> e uma moto tem <code>bau_litros</code>. Isso é um erro? Explique como o MongoDB lida com isso e qual é o risco.",
+  gab:"Não é erro — o schema flexível permite documentos <b>heterogêneos</b> na mesma coleção; cada documento guarda só os campos que tem. Risco: a aplicação/consulta precisa tratar campo ausente (<code>$exists</code>, valor default) e, sem <i>schema validation</i>, um erro de digitação de nome de campo passa despercebido. Boa prática: validação de schema ou convenção clara.",
+  exp:""
+},
+{
+  aula:"Aula 03", tipo:"Conceito",
+  enunciado:"Qual a diferença entre <code>insertOne</code> e <code>insertMany</code>? E o que acontece se um <code>insertMany</code> incluir um <code>_id</code> que já existe na coleção (modo padrão)?",
+  gab:"<code>insertOne</code> insere um documento; <code>insertMany</code> insere um array numa única operação. Com <code>_id</code> duplicado no modo padrão (<code>ordered: true</code>), a operação <b>para</b> no documento que falhou: os anteriores foram gravados, os seguintes não. Com <code>{ ordered: false }</code>, insere todos os válidos e reporta as falhas.",
+  exp:""
+},
+{
+  aula:"Aula 04", tipo:"Modelagem",
+  enunciado:"Em <code>viagens</code>, cada item de entrega <code>{ nf, valor }</code> está <b>embutido</b> no array <code>itens_entrega</code>. Quando esse Embed é a escolha certa e quando você separaria em coleção própria?",
+  gab:"Embed é certo quando os itens são <b>sempre lidos junto</b> com a viagem, são poucos/limitados e 'fazem parte de' a viagem. Separar (Reference) se os itens precisarem ser consultados/agregados <b>isoladamente</b> (ex.: relatório de todas as NFs do mês, sem a viagem), se o número por viagem for ilimitado, ou se sofrerem escrita concorrente alta.",
+  exp:"Regra: lido junto e em pouca quantidade → Embed; grande/ilimitado/independente → Reference."
+},
 
-  // ── AULA 04 ──────────────────────────────────────────────────────────────
-  {
-    aula: "Aula 04",
-    tipo: "Código",
-    enunciado: "Qual pipeline de agregação retorna a <strong>média de notas</strong> agrupada por campo <code>curso</code>?",
-    opcoes: [
-      "db.alunos.aggregate([{ $group: { _id: \"$curso\", media: { $avg: \"$nota\" } } }])",
-      "db.alunos.find({ $group: { _id: \"$curso\", media: { $avg: \"$nota\" } } })",
-      "db.alunos.aggregate([{ $match: \"$curso\" }, { $avg: \"$nota\" }])",
-      "db.alunos.groupBy(\"curso\").avg(\"nota\")"
-    ],
-    correta: 0,
-    feedback: "O método aggregate() recebe um array de estágios do pipeline. $group agrupa os documentos por _id (aqui, o campo curso) e $avg calcula a média de nota. O find() não aceita $group. As demais opções são sintaxes inválidas no MongoDB."
-  },
-  {
-    aula: "Aula 04",
-    tipo: "Conceito",
-    enunciado: "Qual afirmação sobre <strong>índices</strong> no MongoDB está <strong>CORRETA</strong>?",
-    opcoes: [
-      "Criar muitos índices sempre melhora o desempenho geral do banco.",
-      "Índices aceleram leituras mas podem impactar negativamente inserções e updates.",
-      "Índices são desnecessários em coleções com menos de 1 milhão de documentos.",
-      "O MongoDB não suporta índices compostos (em múltiplos campos)."
-    ],
-    correta: 1,
-    feedback: "Índices aceleram consultas do tipo find() e sort(), mas cada índice adicional precisa ser mantido durante inserções e updates, aumentando o custo de escrita. A recomendação das boas práticas é indexar campos de consulta frequente e evitar índices desnecessários ou redundantes."
-  },
-  {
-    aula: "Aula 04",
-    tipo: "Código",
-    enunciado: "Em um pipeline de agregação MongoDB, qual estágio deve ser posicionado <strong>primeiro</strong> para obter o melhor desempenho?",
-    opcoes: [
-      "{ $group: ... } — agrupar dados antes de filtrar",
-      "{ $sort: ... } — ordenar antes de processar",
-      "{ $match: ... } — filtrar os documentos relevantes no início",
-      "{ $project: ... } — selecionar campos antes de filtrar"
-    ],
-    correta: 2,
-    feedback: "$match no início do pipeline filtra os documentos antes dos estágios seguintes, reduzindo a quantidade de dados processados. Quando $match aparece antes de $sort ou $group, o MongoDB pode aproveitar índices para a filtragem, melhorando consideravelmente o desempenho."
-  },
-  {
-    aula: "Aula 04",
-    tipo: "Código",
-    enunciado: "Para <strong>remover o valor</strong> <code>\"tecnologia\"</code> do array de <code>tags</code> de um produto, qual operador e comando MongoDB estão corretos?",
-    opcoes: [
-      "db.produtos.updateOne({nome: \"Laptop\"}, {$remove: {tags: \"tecnologia\"}})",
-      "db.produtos.updateOne({nome: \"Laptop\"}, {$pull: {tags: \"tecnologia\"}})",
-      "db.produtos.updateOne({nome: \"Laptop\"}, {$unset: {tags: \"tecnologia\"}})",
-      "db.produtos.updateOne({nome: \"Laptop\"}, {$delete: {tags: \"tecnologia\"}})"
-    ],
-    correta: 1,
-    feedback: "$pull remove de um array todos os elementos que correspondem ao valor ou condição informada. $push adiciona ao array. $unset remove o campo inteiro do documento. $remove e $delete não são operadores de update válidos no MongoDB."
-  },
+// ---------- BLOCO C — Read e filtros ----------
+{
+  aula:"Aula 03", tipo:"Código", code:true,
+  enunciado:"Consulta: veículos da <code>filial</code> \"Saquarema\", <code>ativo</code>, com <code>km_rodados</code> <b>entre 50000 e 150000 (inclusive)</b>, mostrando só <code>placa</code> e <code>km_rodados</code> (sem <code>_id</code>).",
+  gab:'db.veiculos.find(\n  { filial: "Saquarema", ativo: true, km_rodados: { $gte: 50000, $lte: 150000 } },\n  { placa: 1, km_rodados: 1, _id: 0 }\n)',
+  exp:"<code>$gte</code>/<code>$lte</code> incluem os limites; inclusão + <code>_id: 0</code> é permitido."
+},
+{
+  aula:"Aula 04", tipo:"Diagnóstico",
+  enunciado:"Você quer veículos com <b>alguma</b> manutenção do <code>tipo</code> \"motor\" que tenha custado <b>mais de 3000</b>. Por que <code>find({ \"manutencoes.tipo\": \"motor\", \"manutencoes.custo\": { $gt: 3000 } })</code> pode devolver veículo errado? Escreva a forma correta.",
+  gab:'db.veiculos.find({\n  manutencoes: { $elemMatch: { tipo: "motor", custo: { $gt: 3000 } } }\n})',
+  code:true,
+  exp:"Com dot-notation as duas condições podem casar em <b>elementos diferentes</b> do array (uma manutenção 'motor' de R$500 + outra 'pneu' de R$4000 passaria). <code>$elemMatch</code> exige que <b>o mesmo</b> subdocumento atenda a tudo."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Consulta: viagens cujo <code>status</code> seja \"concluida\" <b>ou</b> \"cancelada\", com <code>km</code> maior que 300, ordenadas da mais recente para a mais antiga, apenas as 10 primeiras.",
+  gab:'db.viagens.find({ status: { $in: ["concluida", "cancelada"] }, km: { $gt: 300 } })\n  .sort({ saida: -1 })\n  .limit(10)',
+  exp:"<code>$in</code> para 'um dos valores'; <code>sort({ saida: -1 })</code> = decrescente."
+},
+{
+  aula:"Aula 04", tipo:"Diagnóstico",
+  enunciado:"Existem veículos com <code>ativo: true</code>, outros <code>ativo: \"sim\"</code>, outros <code>ativo: 1</code>. <code>find({ ativo: true })</code> traz menos do que deveria. Explique a causa, escreva uma consulta que pegue os três casos e o comando que corrige os dados de vez.",
+  gab:'// causa: BSON compara TIPO + valor -> "sim" e 1 não são o boolean true\ndb.veiculos.find({ ativo: { $in: [true, "sim", 1] } })\n\n// correção definitiva:\ndb.veiculos.updateMany({ ativo: { $in: ["sim", 1] } }, { $set: { ativo: true } })',
+  code:true,
+  exp:"<code>$in</code> resolve a consulta; o certo é padronizar o campo para boolean."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Consulta: veículos cuja <code>placa</code> <b>começa</b> com \"ABC\" (sem diferenciar maiúsc/minúsc). Explique por que, sem o <code>^</code>, a consulta também traria a placa \"XYABC12\".",
+  gab:'db.veiculos.find({ placa: { $regex: "^ABC", $options: "i" } })',
+  exp:"Sem <code>^</code>, o regex casa \"ABC\" em <b>qualquer posição</b> da string. O <code>^</code> ancora no início."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Consulta: veículos que <b>não têm</b> o campo <code>manutencoes</code> <b>ou</b> cujo <code>manutencoes</code> é um array vazio.",
+  gab:'db.veiculos.find({\n  $or: [\n    { manutencoes: { $exists: false } },\n    { manutencoes: { $size: 0 } }\n  ]\n})',
+  exp:"<code>{ manutencoes: [] }</code> casa o array vazio, mas <b>não</b> o campo ausente; por isso o <code>$or</code> com <code>$exists</code>."
+},
+{
+  aula:"Aula 04", tipo:"Diagnóstico",
+  enunciado:"Consulta: viagens de <b>julho de 2024</b>. Por que <code>{ $gte: ISODate(\"2024-07-01\"), $lte: ISODate(\"2024-07-31\") }</code> perde viagens do dia 31 à tarde? Escreva a forma correta.",
+  gab:'db.viagens.find({ saida: { $gte: ISODate("2024-07-01"), $lt: ISODate("2024-08-01") } })',
+  code:true,
+  exp:"<code>ISODate(\"2024-07-31\")</code> é a meia-noite do dia 31 — qualquer hora depois fica fora do <code>$lte</code>. Padrão de intervalo: <code>$gte</code> início + <code>$lt</code> início do próximo período."
+},
+{
+  aula:"Aula 03", tipo:"Conceito",
+  enunciado:"Por que <code>db.veiculos.find({}, { placa: 1, manutencoes: 0 })</code> dá erro, mas <code>{ placa: 1, _id: 0 }</code> funciona?",
+  gab:"Não se pode <b>misturar</b> inclusão (<code>campo: 1</code>) e exclusão (<code>campo: 0</code>) na mesma projeção. A <b>única exceção</b> é o <code>_id</code>, que pode ser removido (<code>_id: 0</code>) numa projeção de inclusão.",
+  exp:"Erro típico: <i>Cannot do exclusion on field manutencoes in inclusion projection</i>."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Paginação: liste a <b>3ª página</b> de veículos ativos, ordenados por <code>km_rodados</code> decrescente, com 20 por página.",
+  gab:'db.veiculos.find({ ativo: true })\n  .sort({ km_rodados: -1 })\n  .skip(40)\n  .limit(20)',
+  exp:"Página 3 → pula 2 páginas: <code>skip((3-1) * 20)</code> = 40."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Consulta: motoristas com <code>categoria_cnh</code> \"E\" <b>e</b> que <b>não</b> morem em \"Niteroi\" nem \"Marica\".",
+  gab:'db.motoristas.find({ categoria_cnh: "E", cidade: { $nin: ["Niteroi", "Marica"] } })',
+  exp:"<code>$nin</code> = 'não está na lista'. A vírgula entre as condições é AND implícito."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Consulta: motoristas cujo array <code>habilitacoes</code> contenha <b>ao mesmo tempo</b> \"carga_perigosa\" e \"refrigerada\".",
+  gab:'db.motoristas.find({ habilitacoes: { $all: ["carga_perigosa", "refrigerada"] } })',
+  exp:"<code>$all</code> = o array precisa conter <b>todos</b> os valores. <code>$in</code> traria quem tem 'pelo menos um'."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Consulta: veículos do tipo \"van\" com <b>exatamente 2</b> tags, exibindo <code>placa</code> e <code>tags</code>.",
+  gab:'db.veiculos.find({ tipo: "van", tags: { $size: 2 } }, { placa: 1, tags: 1, _id: 0 })',
+  exp:"<code>$size</code> casa o tamanho <b>exato</b> do array; não aceita faixa (<code>$gt</code> etc.)."
+},
+{
+  aula:"Aula 04", tipo:"Diagnóstico",
+  enunciado:"<code>find({ km_rodados: { $gt: 100000 } })</code> não retorna o veículo cujo <code>km_rodados</code> foi gravado como <code>\"210000\"</code> (string). Explique e escreva uma consulta que pegue os dois casos (número e string numérica).",
+  gab:'// number "210000" (string) não é comparado como número.\n// pega os dois casos:\ndb.veiculos.find({ $expr: { $gt: [ { $toDouble: "$km_rodados" }, 100000 ] } })\n// solução real: normalizar -> db.veiculos.updateMany(\n//   { km_rodados: { $type: "string" } },\n//   [ { $set: { km_rodados: { $toInt: "$km_rodados" } } } ] )',
+  code:true,
+  exp:"<code>$expr</code> permite usar operadores de agregação (<code>$toDouble</code>) no <code>find</code>. O certo é padronizar o tipo do campo."
+},
 
-  // ── AULA 05 ──────────────────────────────────────────────────────────────
-  {
-    aula: "Aula 05",
-    tipo: "Código",
-    enunciado: "Qual é a estrutura <strong>CORRETA</strong> de um estágio <code>$lookup</code> para unir documentos da coleção <code>alunos</code> com dados da coleção <code>cursos</code> pelo campo <code>curso_id</code>?",
-    opcoes: [
-      { code: `{ $lookup: {\n    from: "cursos",\n    localField: "curso_id",\n    foreignField: "_id",\n    as: "curso_info"\n}}` },
-      { code: `{ $join: {\n    collection: "cursos",\n    on: "curso_id",\n    as: "curso_info"\n}}` },
-      { code: `{ $lookup: {\n    collection: "cursos",\n    match: { "curso_id": "_id" },\n    as: "curso_info"\n}}` },
-      { code: `{ $lookup: {\n    from: "cursos",\n    using: "curso_id",\n    as: "curso_info"\n}}` }
-    ],
-    correta: 0,
-    feedback: "O $lookup correto usa os campos: from (coleção externa), localField (campo no documento atual), foreignField (campo na coleção externa) e as (nome do array resultante). $join não existe no MongoDB. As opções C e D usam parâmetros incorretos (collection, match, using)."
-  },
-  {
-    aula: "Aula 05",
-    tipo: "Conceito",
-    enunciado: "Qual é a função do estágio <code>$unwind</code> em um pipeline de agregação MongoDB?",
-    opcoes: [
-      "Remove campos com valores nulos dos documentos do resultado.",
-      "Desconstrói um campo array em múltiplos documentos, um para cada elemento.",
-      "Agrupa documentos por um campo específico para calcular métricas.",
-      "Ordena o resultado do pipeline de forma decrescente."
-    ],
-    correta: 1,
-    feedback: "$unwind recebe um campo array e gera um documento separado para cada elemento do array. É essencial após um $lookup, pois o resultado da junção fica dentro de um array — o $unwind o \"desempacota\" para facilitar operações posteriores como $group ou $project."
-  },
-  {
-    aula: "Aula 05",
-    tipo: "Conceito",
-    enunciado: "Qual é a principal utilidade do estágio <code>$facet</code> em um pipeline de agregação?",
-    opcoes: [
-      "Criar índices em múltiplos campos da coleção simultaneamente.",
-      "Executar múltiplos sub-pipelines em paralelo sobre os mesmos dados de entrada.",
-      "Realizar $lookup entre mais de duas coleções ao mesmo tempo.",
-      "Validar o schema de todos os documentos de uma coleção."
-    ],
-    correta: 1,
-    feedback: "$facet permite executar vários pipelines de agregação paralelos sobre o mesmo conjunto de dados de entrada, retornando um único documento com os resultados de cada sub-pipeline. É útil para gerar KPIs e relatórios multi-dimensionais em uma única consulta."
-  },
-  {
-    aula: "Aula 05",
-    tipo: "Código",
-    enunciado: "Um desenvolvedor executa um <code>$lookup</code> mas o array resultante fica sempre <strong>vazio</strong>. De acordo com as boas práticas da Aula 05, qual é a causa mais provável?",
-    opcoes: [
-      "O $lookup só funciona dentro de sessões de transação ativas.",
-      "O número de documentos nas coleções é grande demais para o $lookup.",
-      "Os tipos do <code>localField</code> e <code>foreignField</code> são diferentes (ex.: String vs ObjectId).",
-      "Falta o estágio $unwind imediatamente antes do $lookup."
-    ],
-    correta: 2,
-    feedback: "Um erro clássico no $lookup é a diferença de tipos entre os campos de junção. Por exemplo, se curso_id é armazenado como String mas _id em cursos é ObjectId, o match nunca encontra correspondência e o array fica vazio. A solução é padronizar os tipos ou usar $lookup com pipeline e conversão de tipo."
-  }
+// ---------- BLOCO D — Update e arrays ----------
+{
+  aula:"Aula 03", tipo:"Código", code:true,
+  enunciado:"Adicione a tag \"prioritario\" ao veículo de placa \"ABC1D23\", <b>garantindo que ela não se repita</b> se o comando rodar de novo. Explique por que não usar <code>$push</code>.",
+  gab:'db.veiculos.updateOne({ placa: "ABC1D23" }, { $addToSet: { tags: "prioritario" } })',
+  exp:"<code>$addToSet</code> só insere se o valor ainda não existir (idempotente). <code>$push</code> acrescentaria \"prioritario\" a cada execução."
+},
+{
+  aula:"Aula 03", tipo:"Conceito",
+  enunciado:"Cada abastecimento é gravado com <code>$push</code> no array <code>abastecimentos</code>. Está certo usar <code>$push</code> (e não <code>$addToSet</code>) aqui, sabendo que dois abastecimentos podem ter o mesmo timestamp? Justifique, contrastando com o uso em <code>tags</code>.",
+  gab:"Sim, <code>$push</code>. Abastecimento é um <b>evento</b>: dois eventos no mesmo instante são registros legítimos distintos e não podem ser descartados. <code>$addToSet</code> eliminaria um abastecimento real por 'ser duplicado'. Já <code>tags</code> é um <b>conjunto</b> sem repetição → <code>$addToSet</code>.",
+  exp:"Fato/evento histórico → <code>$push</code>; atributo-conjunto → <code>$addToSet</code>."
+},
+{
+  aula:"Aula 03", tipo:"Código", code:true,
+  enunciado:"Some <b>5000</b> ao <code>km_rodados</code> de <b>todos</b> os veículos do tipo \"van\" que estejam ativos.",
+  gab:'db.veiculos.updateMany({ tipo: "van", ativo: true }, { $inc: { km_rodados: 5000 } })',
+  exp:"<code>$inc</code> soma ao valor atual; <code>updateMany</code> afeta todos os do filtro (<code>updateOne</code> pararia no primeiro)."
+},
+{
+  aula:"Aula 03", tipo:"Diagnóstico",
+  enunciado:"Um script rodou <code>db.veiculos.updateMany({}, { $set: { ativo: false } })</code> por engano. O que aconteceu e como você dimensiona o estrago antes de tentar reverter?",
+  gab:"O filtro <code>{}</code> casa <b>todos</b> os documentos → <b>todos</b> os veículos ficaram <code>ativo: false</code>. Não há 'desfazer' nativo. Para dimensionar: <code>countDocuments({ ativo: false })</code> (deve bater com o total), comparar com um backup/snapshot/oplog anterior ou um campo de auditoria. Reverter só com backup ou sabendo quais eram ativos antes.",
+  exp:"Filtro vazio em <code>updateMany</code>/<code>deleteMany</code> é o erro mais caro. Sempre testar com <code>find</code>/<code>count</code>."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Na viagem <code>_id: 1</code>, o item de entrega com <code>nf: \"123\"</code> teve o <code>valor</code> corrigido para 980. Atualize <b>somente esse elemento</b> do array <code>itens_entrega</code>.",
+  gab:'db.viagens.updateOne(\n  { _id: 1, "itens_entrega.nf": "123" },\n  { $set: { "itens_entrega.$.valor": 980 } }\n)',
+  exp:"O operador posicional <code>$</code> referencia o <b>primeiro</b> elemento do array que casou com a condição do filtro."
+},
+{
+  aula:"Aula 03", tipo:"Código", code:true,
+  enunciado:"Remova a tag \"teste\" do array <code>tags</code> de todos os veículos onde ela existir.",
+  gab:'db.veiculos.updateMany({ tags: "teste" }, { $pull: { tags: "teste" } })',
+  exp:"<code>$pull</code> remove do array todos os elementos iguais ao valor (ou que casem a condição)."
+},
+{
+  aula:"Aula 03", tipo:"Conceito",
+  enunciado:"Explique <code>upsert</code>. O que faz <code>db.veiculos.updateOne({ placa: \"ZZZ9Z99\" }, { $set: { filial: \"Angra\" } }, { upsert: true })</code> se essa placa não existe?",
+  gab:"<code>upsert: true</code> = atualiza se encontrar, <b>insere</b> se não encontrar. Como a placa não existe, cria um documento novo com <code>placa: \"ZZZ9Z99\"</code> (vindo do filtro) e <code>filial: \"Angra\"</code> (vindo do <code>$set</code>); os demais campos ficam ausentes.",
+  exp:"Útil para 'grava ou cria' sem checar antes; cuidado: filtro impreciso cria documentos indesejados."
+},
+{
+  aula:"Aula 03", tipo:"Conceito",
+  enunciado:"Diferença prática entre <code>{ $set: { km_rodados: 5000 } }</code> e <code>{ $inc: { km_rodados: 5000 } }</code> num veículo que já tem <code>km_rodados: 84000</code>?",
+  gab:"<code>$set</code> grava 5000 (perde os 84000). <code>$inc</code> soma → 89000. Para 'rodou mais 5000 km' use <code>$inc</code>.",
+  exp:""
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Adicione, no array <code>manutencoes</code> do veículo \"EFG4H56\", a manutenção <code>{ data: ISODate(\"2024-08-01\"), tipo: \"pneu\", custo: 1600 }</code>. E se o campo <code>manutencoes</code> não existir nesse documento — o comando funciona?",
+  gab:'db.veiculos.updateOne(\n  { placa: "EFG4H56" },\n  { $push: { manutencoes: { data: ISODate("2024-08-01"), tipo: "pneu", custo: 1600 } } }\n)',
+  exp:"Sim: <code>$push</code> num campo ausente <b>cria</b> o array com o elemento. (Já <code>$push</code> num campo que existe e não é array dá erro.)"
+},
+
+// ---------- BLOCO E — Delete ----------
+{
+  aula:"Aula 03", tipo:"Procedimento", code:true,
+  enunciado:"Descreva a <b>sequência segura</b> (com comandos) para remover veículos <b>inativos E sem nenhuma manutenção registrada</b> (campo ausente ou array vazio).",
+  gab:'const f = { ativo: false, $or: [ { manutencoes: { $exists: false } }, { manutencoes: { $size: 0 } } ] };\ndb.veiculos.countDocuments(f)      // 1) confere o alcance\ndb.veiculos.find(f)                // 2) (opcional) inspeciona\ndb.veiculos.deleteMany(f)          // 3) remove\ndb.veiculos.countDocuments({})     // 4) valida o total depois',
+  exp:"Sempre contar/inspecionar antes e validar depois. <code>$or</code> cobre 'sem o campo' e 'array vazio'."
+},
+{
+  aula:"Aula 03", tipo:"Conceito",
+  enunciado:"<code>deleteOne</code> vs <code>deleteMany</code> vs <code>drop()</code> — o que cada um faz e quando usar.",
+  gab:"<code>deleteOne(filtro)</code>: remove o <b>primeiro</b> documento que casa (alvo único, ex.: por <code>_id</code>). <code>deleteMany(filtro)</code>: remove <b>todos</b> os que casam (limpeza por critério — testar com <code>count</code> antes). <code>drop()</code>: remove a <b>coleção inteira</b> (documentos + índices), para descartar tudo.",
+  exp:""
+},
+{
+  aula:"Aula 03", tipo:"Diagnóstico",
+  enunciado:"Objetivo: apagar veículos 'inativos <b>E</b> parados há mais de 1 ano'. Alguém escreveu <code>deleteMany({ $or: [ { ativo: false }, { ultima_viagem: { $lt: umAnoAtras } } ] })</code>. Quais veículos isso apagaria <b>indevidamente</b>? Qual o filtro correto?",
+  gab:"Com <code>$or</code>, apaga qualquer veículo inativo <b>ou</b> qualquer um parado há +1 ano — inclusive um veículo <b>ativo</b> que só está sem viagem há muito tempo (reserva/sazonal) e um veículo inativado ontem. Correto (AND implícito): <code>{ ativo: false, ultima_viagem: { $lt: umAnoAtras } }</code>.",
+  exp:"Trocar 'E' por 'OU' amplia o alcance da exclusão — erro clássico e destrutivo."
+},
+{
+  aula:"Aula 03", tipo:"Conceito",
+  enunciado:"Diferença entre <code>db.veiculos.countDocuments({})</code> e <code>db.veiculos.estimatedDocumentCount()</code>. Quando usar cada um?",
+  gab:"<code>countDocuments</code> conta de fato (via agregação): exato, aceita filtro, mais lento. <code>estimatedDocumentCount</code> lê metadados: instantâneo, <b>não aceita filtro</b>, pode ficar defasado após quedas abruptas. Use <code>estimated</code> para um 'total aproximado' rápido de dashboard; <code>countDocuments</code> quando precisa de exatidão ou filtro.",
+  exp:""
+},
+{
+  aula:"Aula 03", tipo:"Conceito",
+  enunciado:"Qual a diferença entre <code>db.viagens.deleteMany({})</code> e <code>db.viagens.drop()</code>? Cite um efeito colateral de cada um.",
+  gab:"<code>deleteMany({})</code> remove todos os <b>documentos</b>, mas mantém a coleção e seus <b>índices</b> (e é logado documento a documento). <code>drop()</code> apaga a coleção inteira, incluindo <b>índices</b> e validações de schema — mais rápido, porém você precisa recriar índices/validações depois.",
+  exp:""
+},
+
+// ---------- BLOCO F — Agregação e $lookup ----------
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Pipeline: <code>km</code> total percorrido e número de viagens por <code>motorista_id</code>, considerando só viagens <code>status: \"concluida\"</code>, ordenado por km total decrescente, top 5.",
+  gab:'db.viagens.aggregate([\n  { $match: { status: "concluida" } },\n  { $group: { _id: "$motorista_id", km_total: { $sum: "$km" }, viagens: { $sum: 1 } } },\n  { $sort: { km_total: -1 } },\n  { $limit: 5 }\n])',
+  exp:"<code>$match</code> primeiro (reduz volume, usa índice), depois <code>$group</code>, <code>$sort</code>, <code>$limit</code>."
+},
+{
+  aula:"Aula 04", tipo:"Conceito",
+  enunciado:"Por que o <code>$match</code> deve vir <b>antes</b> do <code>$group</code>? E se o critério de filtro depende de um campo criado <b>no</b> <code>$group</code> (ex.: <code>km_total &gt; 10000</code>)?",
+  gab:"<code>$match</code> no início reduz o número de documentos que seguem no pipeline e pode <b>usar índice</b> da coleção. Se o filtro usa um campo agregado (<code>km_total</code>), é preciso um <b>segundo <code>$match</code> depois</b> do <code>$group</code> — esse opera em memória sobre o resultado, sem índice.",
+  exp:"Padrão: <code>$match</code> (bruto, indexado) → <code>$group</code> → <code>$match</code> (agregado) → <code>$sort</code>."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Pipeline: para <b>cada viagem</b>, trazer <code>nome</code> e <code>cidade</code> do motorista (junção <code>viagens.motorista_id</code> = <code>motoristas._id</code>). Use <code>$lookup</code>, <code>$unwind</code> e <code>$project</code>, exibindo <code>origem</code>, <code>destino</code>, <code>status</code>, <code>motorista</code> e <code>cidade</code>.",
+  gab:'db.viagens.aggregate([\n  { $lookup: { from: "motoristas", localField: "motorista_id",\n               foreignField: "_id", as: "m" } },\n  { $unwind: "$m" },\n  { $project: { _id: 0, origem: 1, destino: 1, status: 1,\n                motorista: "$m.nome", cidade: "$m.cidade" } }\n])',
+  exp:"<code>$lookup</code> devolve um array; <code>$unwind</code> o 'achata' para objeto, permitindo <code>$m.nome</code> no <code>$project</code>."
+},
+{
+  aula:"Aula 04", tipo:"Diagnóstico",
+  enunciado:"O <code>$lookup</code> da questão anterior devolve <code>m</code> <b>vazio em metade das viagens</b>. Sabendo que <code>viagens.motorista_id</code> às vezes é String e às vezes ObjectId, e <code>motoristas._id</code> é ObjectId — diagnostique e dê <b>duas</b> soluções.",
+  gab:"Incompatibilidade de tipo: a String \"66…\" não é igual ao ObjectId(\"66…\"), então o match não acontece. Solução 1 (dados): converter — <code>db.viagens.find({motorista_id:{$type:\"string\"}}).forEach(v =&gt; db.viagens.updateOne({_id:v._id},{$set:{motorista_id:new ObjectId(v.motorista_id)}}))</code>. Solução 2 (pipeline): <code>$lookup</code> com sub-pipeline convertendo o tipo com <code>$toObjectId</code>/<code>$expr</code>.",
+  exp:"Erro clássico de <code>$lookup</code>: <code>localField</code> e <code>foreignField</code> com tipos diferentes."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Escreva o <code>$lookup</code> com <b>sub-pipeline</b> que resolve o problema de tipo da questão anterior (converte <code>motorista_id</code> para ObjectId dentro do join).",
+  gab:'{ $lookup: {\n    from: "motoristas",\n    let: { mid: { $toObjectId: "$motorista_id" } },\n    pipeline: [ { $match: { $expr: { $eq: ["$_id", "$$mid"] } } } ],\n    as: "m"\n} }',
+  exp:"<code>let</code> cria a variável convertida; <code>$$mid</code> a usa dentro do sub-pipeline via <code>$expr</code>."
+},
+{
+  aula:"Aula 04", tipo:"Conceito",
+  enunciado:"Num join 1:1, o <code>$lookup</code> devolve um array de 0 ou 1 elemento. Por que ainda assim se usa <code>$unwind</code> logo em seguida? E o que muda com <code>{ preserveNullAndEmptyArrays: true }</code>?",
+  gab:"<code>$unwind</code> 'achata' o array em objeto, permitindo acessar <code>$m.nome</code> direto (em vez de <code>$arrayElemAt</code>). Por padrão, <code>$unwind</code> <b>descarta</b> o documento se o array vier vazio (sem match). Com <code>{ preserveNullAndEmptyArrays: true }</code>, mantém o documento (com <code>m</code> nulo).",
+  exp:""
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Pipeline: por <code>filial</code>, quantos veículos estão <b>acima de 200000 km</b> e quantos <b>abaixo</b>. Use <code>$cond</code> e <code>$sum</code> dentro do <code>$group</code>.",
+  gab:'db.veiculos.aggregate([\n  { $group: {\n      _id: "$filial",\n      acima_200k: { $sum: { $cond: [ { $gte: ["$km_rodados", 200000] }, 1, 0 ] } },\n      abaixo_200k: { $sum: { $cond: [ { $lt: ["$km_rodados", 200000] }, 1, 0 ] } }\n  } }\n])',
+  exp:"<code>$cond: [cond, 1, 0]</code> somado por <code>$sum</code> é o padrão de 'contagem condicional' na agregação."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Escreva <b>um único pipeline</b> (<code>$facet</code>) que devolva: (a) total de veículos ativos; (b) as 3 filiais com mais veículos; (c) a distribuição de veículos por <code>tipo</code>.",
+  gab:'db.veiculos.aggregate([\n  { $facet: {\n    ativos: [\n      { $match: { ativo: { $in: [true, "sim", 1] } } },\n      { $count: "total" }\n    ],\n    top_filiais: [\n      { $group: { _id: "$filial", n: { $sum: 1 } } },\n      { $sort: { n: -1 } }, { $limit: 3 }\n    ],\n    por_tipo: [\n      { $group: { _id: "$tipo", n: { $sum: 1 } } }\n    ]\n  } }\n])',
+  exp:"<code>$facet</code> roda vários sub-pipelines em paralelo sobre a mesma entrada e devolve um único documento com os três resultados."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Pipeline com <code>$switch</code>: classifique cada veículo em <code>faixa_uso</code> a partir de <code>km_rodados</code> — \"novo\" (&lt; 50000), \"medio\" (50000 a 150000), \"alto\" (&gt; 150000). Exiba <code>placa</code> e <code>faixa_uso</code>.",
+  gab:'db.veiculos.aggregate([\n  { $project: { _id: 0, placa: 1,\n      faixa_uso: { $switch: { branches: [\n        { case: { $lt: ["$km_rodados", 50000] }, then: "novo" },\n        { case: { $lte: ["$km_rodados", 150000] }, then: "medio" }\n      ], default: "alto" } }\n  } }\n])',
+  exp:"<code>$switch</code> avalia os <code>case</code> em ordem; o primeiro verdadeiro vence, senão o <code>default</code>."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Pipeline: custo médio de manutenção <b>por tipo de manutenção</b>, apenas de veículos ativos, arredondado a 2 casas, ordenado do maior para o menor. (dica: <code>$unwind</code> no array <code>manutencoes</code>)",
+  gab:'db.veiculos.aggregate([\n  { $match: { ativo: true } },\n  { $unwind: "$manutencoes" },\n  { $group: { _id: "$manutencoes.tipo", custo_medio: { $avg: "$manutencoes.custo" } } },\n  { $project: { custo_medio: { $round: ["$custo_medio", 2] } } },\n  { $sort: { custo_medio: -1 } }\n])',
+  exp:"<code>$unwind</code> gera um documento por elemento do array; depois agrupa-se por <code>manutencoes.tipo</code>. Veículos sem <code>manutencoes</code> (ou vazio) são descartados pelo <code>$unwind</code>."
+},
+{
+  aula:"Aula 04", tipo:"Conceito",
+  enunciado:"No pipeline <code>[ $match, $lookup, $unwind, $project ]</code>, o que muda se você colocar um <code>$project</code> (removendo campos pesados) <b>antes</b> do <code>$lookup</code>? Por que às vezes isso NÃO deve ser feito?",
+  gab:"<code>$project</code> cedo reduz o tamanho dos documentos que trafegam pelos estágios seguintes (menos memória, pipeline mais rápido). Mas não se deve remover um campo que estágios posteriores precisam — se o <code>$project</code> tirar <code>motorista_id</code>, o <code>$lookup</code> seguinte não tem chave para o join.",
+  exp:"Otimizar cedo é bom; só não jogue fora o que ainda vai ser usado."
+},
+{
+  aula:"Aula 04", tipo:"Código", code:true,
+  enunciado:"Pipeline: valor total (<code>$sum</code> de <code>itens_entrega.valor</code>) transportado por <code>veiculo_placa</code>, somando <b>todos</b> os itens de <b>todas</b> as viagens concluídas, ordenado desc.",
+  gab:'db.viagens.aggregate([\n  { $match: { status: "concluida" } },\n  { $unwind: "$itens_entrega" },\n  { $group: { _id: "$veiculo_placa", valor_total: { $sum: "$itens_entrega.valor" } } },\n  { $sort: { valor_total: -1 } }\n])',
+  exp:"Para somar dentro de um array de subdocumentos, <code>$unwind</code> primeiro e depois <code>$group</code> com <code>$sum</code>."
+},
+{
+  aula:"Aula 04", tipo:"Diagnóstico",
+  enunciado:"Um pipeline com <code>{ $group: { _id: \"$filial\", total: { $sum: \"$km_rodados\" } } }</code> devolve <code>total</code> muito menor do que o esperado numa filial. Que problema de dados (já citado no contexto) explica isso? Como corrigir dentro do pipeline?",
+  gab:"<code>km_rodados</code> está como <b>string</b> em alguns documentos; <code>$sum</code> ignora valores não-numéricos (soma como 0). Correção no pipeline: converter antes de somar — <code>{ $sum: { $toDouble: \"$km_rodados\" } }</code> (ou um <code>$addFields</code> com <code>$convert</code> tratando erro). Solução real: normalizar o tipo do campo na coleção.",
+  exp:"Operadores de agregação numéricos silenciosamente descartam tipos incompatíveis."
+},
+
+// ---------- BLOCO G — Índices e performance ----------
+{
+  aula:"Aula 04", tipo:"Conceito",
+  enunciado:"<code>find({ placa: ... })</code> está lento. Você cria <code>db.veiculos.createIndex({ placa: 1 })</code>. Cite <b>1 benefício</b> e <b>2 custos</b> desse índice.",
+  gab:"Benefício: a busca por <code>placa</code> passa de varredura O(n) para O(log n). Custos: (1) o índice ocupa espaço em disco/RAM; (2) todo <code>insert</code>/<code>update</code>/<code>delete</code> precisa manter o índice atualizado → escrita mais cara.",
+  exp:""
+},
+{
+  aula:"Aula 04", tipo:"Conceito",
+  enunciado:"Por que um índice em <code>ativo</code> (só <code>true</code>/<code>false</code>) ajuda pouco?",
+  gab:"Baixíssima <b>seletividade</b>: cada valor aponta para ~metade da coleção. O planejador quase sempre prefere a varredura; o índice tem custo de manutenção e ganho quase nulo. Indexar campos seletivos e de consulta frequente.",
+  exp:""
+},
+{
+  aula:"Aula 04", tipo:"Conceito",
+  enunciado:"Existe o índice composto <code>db.veiculos.createIndex({ filial: 1, tipo: 1 })</code>. Para cada consulta, diga se ela consegue usar o índice: (a) filtra só por <code>filial</code>; (b) filtra só por <code>tipo</code>; (c) filtra por <code>filial</code> e <code>tipo</code>; (d) filtra por <code>filial</code> e ordena por <code>tipo</code>.",
+  gab:"(a) <b>Sim</b> — usa o prefixo à esquerda (<code>filial</code>). (b) <b>Não</b> — <code>tipo</code> não é prefixo. (c) <b>Sim</b> — <code>filial</code> + <code>tipo</code> na ordem do índice. (d) <b>Sim</b> — filtra por <code>filial</code> e a ordenação por <code>tipo</code> sai 'de graça' do índice.",
+  exp:"Regra do prefixo à esquerda: {a,b} serve consultas por a, ou por a+b — nunca por b sozinho."
+},
+{
+  aula:"Aula 04", tipo:"Conceito",
+  enunciado:"Quando um índice de texto (<code>createIndex({ modelo: \"text\" })</code>) é melhor que <code>$regex</code>, e quando <code>$regex</code> é melhor?",
+  gab:"Índice de texto: busca em linguagem natural (várias palavras, <i>stemming</i>, ordenar por relevância com <code>$meta: \"textScore\"</code>) e desempenho em grande volume. <code>$regex</code>: padrões específicos (prefixo <code>^ABC</code>, formato de placa, sufixo) — mas <code>$regex</code> sem âncora à esquerda <b>não</b> usa índice.",
+  exp:""
+},
+{
+  aula:"Aula 04", tipo:"Diagnóstico",
+  enunciado:"Depois de criar 6 índices numa coleção <code>viagens</code> que recebe milhares de inserções por hora, as inserções ficaram lentas. Explique a causa e o princípio de boa prática.",
+  gab:"Cada índice precisa ser <b>atualizado a cada inserção/alteração/remoção</b> — 6 índices = 6 estruturas mantidas por escrita. Em carga de escrita alta isso pesa. Boa prática: manter só os índices que consultas frequentes realmente usam; revisar com <code>explain()</code> e remover índices redundantes ou não usados.",
+  exp:"Índice acelera leitura e desacelera escrita — é um trade-off, não 'quanto mais melhor'."
+},
+
+// ---------- Extras — modelagem Embed vs Reference aplicada ----------
+{
+  aula:"Aula 04", tipo:"Modelagem",
+  enunciado:"A ficha do motorista embute <code>ultimas_viagens: [ ... ]</code> (as 200 viagens mais recentes, atualizado a cada viagem). Isso é Embed 'bounded' ou 'unbounded'? É um bom uso? O que você faria diferente para permitir consultar TODAS as viagens de um motorista?",
+  gab:"É Embed <b>bounded</b> (limite fixo de 200) — aceitável para 'mostrar as últimas viagens na tela do motorista' sem <code>$lookup</code>. Mas não serve para histórico completo. O certo: manter <code>viagens</code> como coleção própria (Reference) com índice <code>{ motorista_id: 1, saida: -1 }</code> e, se quiser, manter o array das últimas 200 como cache desnormalizado (padrão 'subset').",
+  exp:"Array com teto fixo é ok; o problema é o array que cresce sem limite."
+},
+{
+  aula:"Aula 01", tipo:"Conceito",
+  enunciado:"A empresa quer que o painel de rastreamento (posição dos veículos) <b>nunca fique fora do ar</b>, mesmo que mostre uma posição de alguns segundos atrás. Já o sistema que fecha a folha de ponto do motorista <b>não pode</b> registrar entrada/saída inconsistente. Classifique cada um como <b>CP</b> ou <b>AP</b> e justifique.",
+  gab:"Rastreamento: <b>AP</b> — disponibilidade acima de consistência; uma posição alguns segundos velha não causa dano. Folha de ponto: <b>CP</b> — consistência acima de disponibilidade; melhor recusar/aguardar do que gravar um registro que conflita com outro.",
+  exp:"CAP é escolhido por operação, não por banco inteiro."
+},
+{
+  aula:"Aula 02", tipo:"Conceito",
+  enunciado:"Explique, com o vocabulário da Aula 02, por que a modelagem em MongoDB é feita 'por consulta' (query-driven) e não 'por entidade' (como a 3ª Forma Normal do relacional).",
+  gab:"No relacional normaliza-se para evitar redundância; os JOINs remontam os dados na leitura, e isso é barato em escala moderada. No NoSQL o custo do <code>$lookup</code>/junção em escala é alto, então modela-se para que a consulta mais frequente seja resolvida numa <b>única leitura</b> — embutindo o que se lê junto e aceitando <b>desnormalização</b> (dado repetido) como troca por desempenho e escala.",
+  exp:"'Modelar por consulta': parta das perguntas que a aplicação faz, não das entidades."
+},
+{
+  aula:"Aula 03", tipo:"Código", code:true,
+  enunciado:"Consulta: quantos veículos existem por <code>filial</code>? (só a contagem por filial, ordenada da maior para a menor)",
+  gab:'db.veiculos.aggregate([\n  { $group: { _id: "$filial", total: { $sum: 1 } } },\n  { $sort: { total: -1 } }\n])',
+  exp:"<code>{ $sum: 1 }</code> conta documentos por grupo — equivalente a <code>COUNT(*) ... GROUP BY filial</code>."
+}
 ];
 
-// ─── ESTADO DO SIMULADO ───────────────────────────────────────────────────────
-let atual = 0;
-let respostas = new Array(questoes.length).fill(null); // índice da opção escolhida ou null
-let timerInterval;
-let segundosRestantes = 40 * 60;
+// ================= ESTADO / PERSISTÊNCIA =================
+const K_RASC = "sim_p1_nosql_rascunho_v3";
+const K_HIST = "sim_p1_nosql_tentativas_v3";
+const AULAS = ["Aula 01","Aula 02","Aula 03","Aula 04"];
+let autoAval = new Array(QUESTOES.length).fill(null);
+let corrigido = false;
 
-// ─── INICIAR SIMULADO ─────────────────────────────────────────────────────────
-function iniciarSimulado() {
-    document.getElementById('tela-inicio').style.display = 'none';
-    document.getElementById('tela-quiz').style.display = 'block';
-    construirIndicadores();
-    renderQuestao(0);
-    iniciarTimer();
+function lerRascunho(){ try { return JSON.parse(localStorage.getItem(K_RASC)) || {}; } catch(e){ return {}; } }
+function salvarRascunho(){
+  const d = {};
+  document.querySelectorAll('textarea[data-q]').forEach(t => d[t.dataset.q] = t.value);
+  try { localStorage.setItem(K_RASC, JSON.stringify(d)); } catch(e){}
+  const av = document.getElementById('rascunho-aviso');
+  if (av){ av.textContent = " respostas salvas neste navegador"; setTimeout(()=>{ if(av) av.textContent=""; }, 1500); }
+}
+function lerHist(){ try { return JSON.parse(localStorage.getItem(K_HIST)) || []; } catch(e){ return []; } }
+function gravarHist(reg){
+  const h = lerHist(); h.unshift(reg);
+  try { localStorage.setItem(K_HIST, JSON.stringify(h.slice(0,20))); } catch(e){}
 }
 
-function iniciarTimer() {
-    timerInterval = setInterval(() => {
-        segundosRestantes--;
-        atualizarTimer();
-        if (segundosRestantes <= 0) {
-            clearInterval(timerInterval);
-            finalizarSimulado();
-        }
-    }, 1000);
+// ================= RENDER =================
+function iniciar(){
+  document.getElementById('tela-inicio').style.display = 'none';
+  document.getElementById('tela-quiz').style.display = 'block';
+  renderQuestoes();
+  window.scrollTo(0,0);
 }
 
-function atualizarTimer() {
-    const min = Math.floor(segundosRestantes / 60).toString().padStart(2, '0');
-    const sec = (segundosRestantes % 60).toString().padStart(2, '0');
-    const el = document.getElementById('timer-display');
-    el.textContent = `${min}:${sec}`;
-    el.classList.toggle('urgente', segundosRestantes <= 300);
-}
-
-// ─── INDICADORES ─────────────────────────────────────────────────────────────
-function construirIndicadores() {
-    const cont = document.getElementById('indicators');
-    cont.innerHTML = '';
-    questoes.forEach((_, i) => {
-        const d = document.createElement('div');
-        d.className = 'ind' + (i === 0 ? ' atual' : '');
-        d.textContent = i + 1;
-        d.onclick = () => renderQuestao(i);
-        cont.appendChild(d);
-    });
-}
-
-function atualizarIndicadores() {
-    const inds = document.querySelectorAll('.ind');
-    inds.forEach((el, i) => {
-        el.className = 'ind';
-        if (i === atual) el.classList.add('atual');
-        else if (respostas[i] !== null) {
-            const correto = respostas[i] === questoes[i].correta;
-            el.classList.add(correto ? 'correto' : 'errado');
-        }
-    });
-}
-
-// ─── RENDERIZAR QUESTÃO ───────────────────────────────────────────────────────
-function renderQuestao(idx) {
-    atual = idx;
-    const q = questoes[idx];
-    const respondida = respostas[idx] !== null;
-    const escolhida = respostas[idx];
-
-    // Barra de progresso
-    document.getElementById('num-atual').textContent = idx + 1;
-    document.getElementById('progress-bar').style.width = `${((idx + 1) / questoes.length) * 100}%`;
-
-    let opcoesHTML = '';
-    q.opcoes.forEach((op, i) => {
-        const letra = ['A','B','C','D'][i];
-        let classes = 'opcao';
-        if (respondida) {
-            classes += ' bloqueada';
-            if (i === q.correta) classes += ' correta';
-            else if (i === escolhida) classes += ' errada';
-        } else if (escolhida === i) {
-            classes += ' selecionada';
-        }
-
-        let conteudo = '';
-        if (typeof op === 'object' && op.code) {
-            conteudo = `<div class="texto"><pre>${op.code}</pre></div>`;
-        } else {
-            conteudo = `<div class="texto">${op}</div>`;
-        }
-
-        opcoesHTML += `
-            <div class="${classes}" onclick="selecionarOpcao(${idx}, ${i})">
-                <div class="letra">${letra}</div>
-                ${conteudo}
-            </div>`;
-    });
-
-    const feedbackClasse = respondida ? (escolhida === q.correta ? 'ok' : 'nok') : '';
-    const feedbackIcone = respondida ? (escolhida === q.correta ? '✅ Correto!' : '❌ Incorreto!') : '';
-    const feedbackStyle = respondida ? 'display:block' : 'display:none';
-
-    const btnAnterior = idx > 0
-        ? `<button class="btn btn-secondary" onclick="renderQuestao(${idx - 1})">← Anterior</button>`
-        : `<div></div>`;
-
-    const ehUltima = idx === questoes.length - 1;
-    const btnProx = ehUltima
-        ? `<button class="btn btn-primary" onclick="finalizarSimulado()">Finalizar Simulado</button>`
-        : `<button class="btn btn-primary" onclick="renderQuestao(${idx + 1})">Próxima →</button>`;
-
-    document.getElementById('card-questao').innerHTML = `
-        <span class="badge-aula">${q.aula}</span>
-        <span class="badge-tipo">${q.tipo}</span>
-        <p class="enunciado">${q.enunciado}</p>
-        <div class="opcoes">${opcoesHTML}</div>
-        <div class="feedback ${feedbackClasse}" style="${feedbackStyle}">
-            <strong>${feedbackIcone}</strong> ${q.feedback}
+function renderQuestoes(){
+  const rasc = lerRascunho();
+  const cont = document.getElementById('lista-questoes');
+  cont.innerHTML = QUESTOES.map((q,i) => {
+    const gabPre = q.code ? `<pre>${esc(q.gab)}</pre>` : `<div class="gab-txt">${q.gab}</div>`;
+    return `
+    <div class="q-card" id="qc-${i}">
+      <div class="badges">
+        <span class="badge aula">${q.aula}</span>
+        <span class="badge tipo">${q.tipo}</span>
+        ${q.code ? '<span class="badge codigo">código</span>' : ''}
+      </div>
+      <div class="enunciado"><span class="q-num">${i+1}.</span>${q.enunciado}</div>
+      <textarea data-q="${i}" placeholder="Sua resposta (mongosh ou Python) — sem consultar nada." oninput="salvarRascunho()">${esc(rasc[i]||'')}</textarea>
+      <div class="gab" id="gab-${i}">
+        <h4>Gabarito</h4>
+        ${gabPre}
+        ${q.exp ? `<div class="exp"><b>Por quê:</b> ${q.exp}</div>` : ''}
+        <div class="self">
+          <span class="marca">Autoavaliação:</span>
+          <button class="btn btn-ok" onclick="marcar(${i},true)">Acertei</button>
+          <button class="btn btn-no" onclick="marcar(${i},false)">Errei</button>
+          <span class="marca" id="marca-${i}"></span>
         </div>
-        <div class="nav-btns">${btnAnterior}${btnProx}</div>
-    `;
-
-    atualizarIndicadores();
+      </div>
+    </div>`;
+  }).join('');
 }
 
-// ─── SELECIONAR OPÇÃO ─────────────────────────────────────────────────────────
-function selecionarOpcao(qIdx, opIdx) {
-    if (respostas[qIdx] !== null) return; // já respondida
-    respostas[qIdx] = opIdx;
-    renderQuestao(qIdx);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function corrigir(){
+  if (!confirm("Corrigir agora? Os gabaritos serão revelados e você fará a autoavaliação de cada questão.")) return;
+  corrigido = true;
+  salvarRascunho();
+  QUESTOES.forEach((q,i) => {
+    document.getElementById('gab-'+i).style.display = 'block';
+    const ta = document.querySelector(`textarea[data-q="${i}"]`);
+    if (!ta.value.trim()) { marcar(i, false); }
+  });
+  document.getElementById('btn-corrigir').style.display = 'none';
+  document.getElementById('btn-finalizar').style.display = 'inline-block';
+  atualizarPlacar();
+  document.getElementById('qc-0').scrollIntoView({behavior:'smooth'});
 }
 
-// ─── FINALIZAR ────────────────────────────────────────────────────────────────
-function finalizarSimulado() {
-    clearInterval(timerInterval);
+function marcar(i, acertou){
+  if (!corrigido) return;
+  autoAval[i] = acertou;
+  const m = document.getElementById('marca-'+i);
+  m.textContent = acertou ? '✓ marcado como acerto' : '✗ marcado como erro';
+  m.style.color = acertou ? '#27ae60' : '#e74c3c';
+  const qc = document.getElementById('qc-'+i);
+  qc.classList.toggle('acertou', acertou);
+  qc.classList.toggle('errou', !acertou);
+  atualizarPlacar();
+}
 
-    const totalAcertos = respostas.reduce((acc, r, i) => acc + (r === questoes[i].correta ? 1 : 0), 0);
-    const nota = (totalAcertos / questoes.length * 10).toFixed(1);
+function atualizarPlacar(){
+  const feitas = autoAval.filter(v => v !== null).length;
+  const acertos = autoAval.filter(v => v === true).length;
+  document.getElementById('placar-barra').textContent =
+    `Autoavaliadas: ${feitas}/${QUESTOES.length}  ·  Acertos: ${acertos}`;
+}
 
-    let conceito, titulo;
-    if (totalAcertos >= 18)      { conceito = 'Excelente! Parabéns!'; titulo = 'Resultado Final'; }
-    else if (totalAcertos >= 14) { conceito = 'Muito Bom!'; titulo = 'Resultado Final'; }
-    else if (totalAcertos >= 10) { conceito = 'Aprovado'; titulo = 'Resultado Final'; }
-    else if (totalAcertos >= 8)  { conceito = 'Recuperação — Revise o conteúdo'; titulo = 'Resultado Final'; }
-    else                          { conceito = 'Reprovado — Estude as aulas novamente'; titulo = 'Resultado Final'; }
+function finalizar(){
+  const pendentes = autoAval.filter(v => v === null).length;
+  if (pendentes > 0 && !confirm(`Faltam ${pendentes} questões sem autoavaliação (contarão como erro). Ver resultado assim mesmo?`)) return;
+  for (let i=0;i<autoAval.length;i++) if (autoAval[i]===null) autoAval[i]=false;
 
-    document.getElementById('tela-quiz').style.display = 'none';
-    const telaRes = document.getElementById('tela-resultado');
-    telaRes.style.display = 'block';
+  const acertos = autoAval.filter(v => v===true).length;
+  const total = QUESTOES.length;
+  const nota = (acertos/total*10);
 
-    document.getElementById('res-titulo').textContent = titulo;
-    document.getElementById('res-nota').textContent = nota;
-    document.getElementById('res-conceito').textContent = conceito;
-    document.getElementById('res-detalhe').textContent =
-        `Você acertou ${totalAcertos} de ${questoes.length} questões`;
+  let conceito;
+  if (acertos >= 56) conceito = "Excelente — a prova vai ser tranquila";
+  else if (acertos >= 47) conceito = "Muito bom — revise os poucos pontos que errou";
+  else if (acertos >= 35) conceito = "Na média — reforce agregação, $lookup e modelagem";
+  else if (acertos >= 22) conceito = "Atenção — refaça as Aulas 03 e 04 antes da prova";
+  else conceito = "Crítico — estude as 4 aulas do zero";
 
-    // Acertos por aula
-    const aulaNames = ['Aula 01','Aula 02','Aula 03','Aula 04','Aula 05'];
-    const aulaAcertos = {};
-    const aulaTotais = {};
-    aulaNames.forEach(a => { aulaAcertos[a] = 0; aulaTotais[a] = 0; });
-    questoes.forEach((q, i) => {
-        aulaTotais[q.aula]++;
-        if (respostas[i] === q.correta) aulaAcertos[q.aula]++;
-    });
+  document.getElementById('tela-quiz').style.display = 'none';
+  const tr = document.getElementById('tela-resultado');
+  tr.style.display = 'block';
+  document.getElementById('res-nota').textContent = nota.toFixed(1);
+  document.getElementById('res-conceito').textContent = conceito;
+  document.getElementById('res-detalhe').textContent = `${acertos} de ${total} questões (autoavaliação)`;
 
-    const aulaSubtitulos = {
-        'Aula 01': 'História / CAP / ACID',
-        'Aula 02': 'Evolução / SQL vs NoSQL',
-        'Aula 03': 'CRUD Básico',
-        'Aula 04': 'CRUD Avançado',
-        'Aula 05': '$lookup / Pipeline'
-    };
+  const porAula = {};
+  AULAS.forEach(a => porAula[a] = {ok:0,tot:0});
+  QUESTOES.forEach((q,i) => { porAula[q.aula].tot++; if (autoAval[i]) porAula[q.aula].ok++; });
+  document.getElementById('res-por-aula').innerHTML = AULAS.map(a => {
+    const p = porAula[a];
+    const cor = p.ok===p.tot ? '#27ae60' : p.ok >= p.tot/2 ? '#f39c12' : '#e74c3c';
+    return `<div class="res-aula-card" style="border-top-color:${cor}">
+      <div class="t">${a}</div><div class="v" style="color:${cor}">${p.ok}/${p.tot}</div></div>`;
+  }).join('');
 
-    let aulaHTML = '';
-    aulaNames.forEach(a => {
-        const cor = aulaAcertos[a] === aulaTotais[a] ? '#27ae60' :
-                    aulaAcertos[a] >= aulaTotais[a] / 2 ? '#f39c12' : '#e74c3c';
-        aulaHTML += `
-            <div class="res-aula-card" style="border-top-color:${cor}">
-                <div class="titulo-aula">${a}<br><small>${aulaSubtitulos[a]}</small></div>
-                <div class="acertos-aula" style="color:${cor}">${aulaAcertos[a]}/${aulaTotais[a]}</div>
-            </div>`;
-    });
-    document.getElementById('res-por-aula').innerHTML = aulaHTML;
+  gravarHist({ data: new Date().toLocaleString('pt-BR'), acertos, total, nota: nota.toFixed(1) });
+  document.getElementById('res-salvo').textContent = "\u{1F4BE} Resultado salvo neste navegador.";
+  renderHist();
+  window.scrollTo(0,0);
+}
 
-    // Gabarito
-    let gabHTML = '';
-    questoes.forEach((q, i) => {
-        const acertou = respostas[i] === q.correta;
-        const icone = acertou ? '✅' : '❌';
-        const opcaoCorreta = typeof q.opcoes[q.correta] === 'object'
-            ? '[código] ' + ['A','B','C','D'][q.correta]
-            : ['A','B','C','D'][q.correta] + ') ' + q.opcoes[q.correta].substring(0, 60) + (q.opcoes[q.correta].length > 60 ? '…' : '');
-        const respAluno = respostas[i] !== null
-            ? (acertou ? '' : ` | Sua resposta: ${['A','B','C','D'][respostas[i]]}`)
-            : ' | Não respondida';
-        gabHTML += `
-            <div class="gabarito-item">
-                <span class="qi">Q${i+1}</span>
-                <span class="resultado-icon">${icone}</span>
-                <div class="enun-resumo">
-                    <div>${q.aula} — ${q.tipo}</div>
-                    <div class="resp-info">Correta: ${opcaoCorreta}${respAluno}</div>
-                </div>
-            </div>`;
-    });
-    document.getElementById('gabarito-lista').innerHTML = gabHTML;
+function renderHist(){
+  const h = lerHist();
+  const el = document.getElementById('res-hist');
+  if (!h.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<h3>Histórico de tentativas (este navegador)</h3>` +
+    h.map(r => `<div class="hist-item"><span>${r.data}</span><span><b>${r.acertos}/${r.total}</b> · nota ${r.nota}</span></div>`).join('');
+}
 
-    telaRes.scrollIntoView({ behavior: 'smooth' });
+function voltarQuiz(){
+  document.getElementById('tela-resultado').style.display = 'none';
+  document.getElementById('tela-quiz').style.display = 'block';
+}
+function refazer(){
+  if (!confirm("Refazer zera a autoavaliação desta sessão (histórico e respostas digitadas são mantidos). Continuar?")) return;
+  autoAval = new Array(QUESTOES.length).fill(null);
+  corrigido = false;
+  document.getElementById('tela-resultado').style.display = 'none';
+  document.getElementById('tela-quiz').style.display = 'block';
+  document.getElementById('btn-corrigir').style.display = 'inline-block';
+  document.getElementById('btn-finalizar').style.display = 'none';
+  renderQuestoes();
+  document.getElementById('placar-barra').textContent = "Responda e clique em Corrigir";
+  window.scrollTo(0,0);
+}
+function limparRascunho(){
+  if (!confirm("Apagar todas as respostas digitadas neste navegador?")) return;
+  try { localStorage.removeItem(K_RASC); } catch(e){}
+  renderQuestoes();
 }
 </script>
 </body>
